@@ -19,17 +19,16 @@ import {
   Slider,
   Stack,
   Switch,
-  Tab,
-  Tabs,
   TextField,
   Typography,
 } from '@mui/material';
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import GraphicEqRounded from '@mui/icons-material/GraphicEqRounded';
-import ImageSearchRounded from '@mui/icons-material/ImageSearchRounded';
 import MicRounded from '@mui/icons-material/MicRounded';
 import PsychologyAltRounded from '@mui/icons-material/PsychologyAltRounded';
 import StopCircleRounded from '@mui/icons-material/StopCircleRounded';
+import { useTranslation } from 'react-i18next';
+import { resources } from './i18n';
 import packageJson from '../package.json';
 
 function getAvailabilityOptions(tab, modelLanguage) {
@@ -73,27 +72,20 @@ const samplePrompts = {
   image: 'Highlight text, numbers, labels, and any structured information that could be useful.',
 };
 
-const ideaCards = [
-  'Resumo automatico de reunioes com lista de decisoes e proximos passos.',
-  'Leitura de comprovantes, notas fiscais e cards com extracao de campos-chave.',
-  'Pipeline de analise de screenshots para suporte tecnico interno.',
-  'Briefing de visitas de campo a partir de fotos e notas de voz.',
-  'Classificacao de chamados por imagem, audio e texto em uma unica interface.',
-  'Matriz de risco operacional extraida de evidencias multimodais.',
-];
-
-const portfolioHighlights = [
-  { label: 'Inputs', value: 'Text, audio, image' },
-  { label: 'Controls', value: 'Prompt + file drop' },
-  { label: 'UX', value: 'Accessible Material UI' },
-  { label: 'Runtime', value: 'Browser-based LLM' },
-];
-
-const portfolioUseCases = [
-  'Meeting transcription with action items and deadlines.',
-  'Receipt, screenshot, and document reading from images.',
-  'Multimodal assistant for internal support and operational analysis.',
-];
+const languageDefaultsByUiLanguage = {
+  'pt-BR': {
+    modelLanguage: 'en',
+    speechLanguage: 'pt-BR',
+  },
+  'en-US': {
+    modelLanguage: 'en',
+    speechLanguage: 'en-US',
+  },
+  'es-ES': {
+    modelLanguage: 'es',
+    speechLanguage: 'es-ES',
+  },
+};
 
 const BALLOON_SURFACE_SX = {
   border: '1px solid rgba(47,34,24,0.12)',
@@ -113,234 +105,6 @@ const HERO_COMPACT_CARD_SX = {
   borderRadius: 0.5,
   py: 1.1,
   px: 1.35,
-};
-
-const uiCopy = {
-  'pt-BR': {
-    heroTag: 'Chrome Prompt API + Multimodal',
-    heroTitle: 'Chrome Multimodal Prompt Studio',
-    heroBody:
-      'Playground em Material UI para chat, transcricao de audio, extracao de texto e dados de imagens, ditado por microfone e exploracao pratica da Prompt API do Chrome.',
-    workspace: 'Workspace',
-    multimodalInput: 'Entrada multimodal',
-    interfaceLanguage: 'Idioma da interface',
-    interfaceLanguageHelp: 'Altera os textos visiveis da interface para facilitar a navegacao.',
-    modelLanguage: 'Idioma do modelo',
-    modelLanguageHelp: 'Define o idioma esperado para entrada e saida textual da sessao.',
-    microphoneLanguage: 'Idioma do ditado',
-    microphoneLanguageHelp: 'Define o idioma usado pelo reconhecimento de voz para ditar o prompt.',
-    temperature: 'Temperature',
-    topK: 'Top K',
-    prompt: 'Prompt',
-    promptPlaceholder: 'Digite o prompt ou use o microfone para ditar.',
-    chat: 'Chat',
-    audio: 'Audio',
-    image: 'Imagem',
-    useMicrophone: 'Usar microfone',
-    stopDictation: 'Parar ditado',
-    recordAudio: 'Gravar audio',
-    stopRecording: 'Parar gravacao',
-    uploadAudio: 'Enviar audio',
-    uploadImage: 'Enviar imagem',
-    uploadFile: 'Enviar arquivo',
-    dropAudio: 'Arraste e solte um audio aqui ou clique para selecionar.',
-    dropImage: 'Arraste e solte uma imagem aqui ou clique para selecionar.',
-    dropFile: 'Arraste e solte um arquivo aqui ou clique para selecionar.',
-    dropPrompt: 'Voce tambem pode arrastar e soltar um arquivo diretamente na area do prompt.',
-    selectedFile: 'Arquivo selecionado',
-    prepareModel: 'Preparar modelo local',
-    preparingModelAction: 'Preparando modelo...',
-    runTask: 'Executar tarefa',
-    stop: 'Interromper',
-    clearPrompt: 'Limpar prompt',
-    clearOutput: 'Limpar output',
-    practicalNotes: 'Observacoes praticas',
-    practicalNotesItems: [
-      'O suporte oficial de idioma do texto na Prompt API pode nao incluir portugues.',
-      'O ditado do microfone usa Web Speech API quando o navegador expoe SpeechRecognition.',
-      'Para audio e imagem, o modelo recebe o arquivo junto com o prompt e responde em texto.',
-    ],
-    output: 'Output',
-    llmResult: 'Resultado da LLM',
-    ideas: 'Ideias para evoluir',
-    responsePlaceholder: 'A resposta vai aparecer aqui.',
-    errorPrefix: 'Erro:',
-    audioLabel: 'Audio',
-    imageLabel: 'Imagem',
-    fileLabel: 'Arquivo',
-    dictationFailed: 'Falha no ditado:',
-    authorNote: 'Feito por Carlos Moura Ramos.',
-    copyrightLabel: 'Copyright',
-    cookieTitle: 'Cookies',
-    cookieBody: 'Este portfolio pode usar cookies locais para preferencias de interface e futuras analytics.',
-    cookieNecessary: 'Cookies essenciais',
-    cookieAnalytics: 'Cookies de analytics',
-    acceptCookies: 'Aceitar',
-    savePreferences: 'Salvar preferencias',
-    portfolioNote: 'Projeto pensado para demonstrar uso real de LLM on-device no navegador com interface multimodal, foco em acessibilidade e valor de produto.',
-    versionLabel: 'Versao',
-    runtimeMode: 'Modo ativo',
-    browserMode: 'Prompt API local',
-    remoteMode: 'Preparacao local',
-    runtimeUnavailable: 'Download do modelo',
-    remoteConfigured: 'A sessao usa a Prompt API local do Chrome quando o modelo ja esta pronto no navegador.',
-    portfolioDemoTitle: 'Demo mode',
-    portfolioDemoBody:
-      'This public version keeps the complete interface visible, but real execution depends on a compatible Chrome environment with on-device AI support.',
-    portfolioDemoHint:
-      'Temperature and Top K are preserved in the UI, but generation is disabled when the browser does not provide a compatible local model.',
-    browserUnavailableCta: 'O navegador ainda precisa preparar ou habilitar o modelo local antes da execucao.',
-  },
-  'en-US': {
-    heroTag: 'Chrome Prompt API + Multimodal',
-    heroTitle: 'Chrome Multimodal Prompt Studio',
-    heroBody:
-      'Material UI playground for chat, audio transcription, text extraction from images, microphone dictation, and hands-on exploration of Chrome Prompt API.',
-    workspace: 'Workspace',
-    multimodalInput: 'Multimodal input',
-    interfaceLanguage: 'Interface language',
-    interfaceLanguageHelp: 'Changes the visible UI text to improve navigation and readability.',
-    modelLanguage: 'Model language',
-    modelLanguageHelp: 'Defines the expected text input and output language for the session.',
-    microphoneLanguage: 'Dictation language',
-    microphoneLanguageHelp: 'Sets the speech recognition language used to dictate the prompt.',
-    temperature: 'Temperature',
-    topK: 'Top K',
-    prompt: 'Prompt',
-    promptPlaceholder: 'Type a prompt or use the microphone for dictation.',
-    chat: 'Chat',
-    audio: 'Audio',
-    image: 'Image',
-    useMicrophone: 'Use microphone',
-    stopDictation: 'Stop dictation',
-    recordAudio: 'Record audio',
-    stopRecording: 'Stop recording',
-    uploadAudio: 'Upload audio',
-    uploadImage: 'Upload image',
-    uploadFile: 'Upload file',
-    dropAudio: 'Drag and drop an audio file here or click to select.',
-    dropImage: 'Drag and drop an image file here or click to select.',
-    dropFile: 'Drag and drop any file here or click to select.',
-    dropPrompt: 'You can also drag and drop a file directly onto the prompt area.',
-    selectedFile: 'Selected file',
-    prepareModel: 'Prepare local model',
-    preparingModelAction: 'Preparing model...',
-    runTask: 'Run task',
-    stop: 'Stop',
-    clearPrompt: 'Clear prompt',
-    clearOutput: 'Clear output',
-    practicalNotes: 'Practical notes',
-    practicalNotesItems: [
-      'Official Prompt API text language support may not include Portuguese.',
-      'Microphone dictation uses the Web Speech API when the browser exposes SpeechRecognition.',
-      'For audio and image flows, the model receives the file together with the prompt and responds in text.',
-    ],
-    output: 'Output',
-    llmResult: 'LLM result',
-    ideas: 'Ideas to explore',
-    responsePlaceholder: 'The response will appear here.',
-    errorPrefix: 'Error:',
-    audioLabel: 'Audio',
-    imageLabel: 'Image',
-    fileLabel: 'File',
-    dictationFailed: 'Dictation failed:',
-    authorNote: 'Made by Carlos Moura Ramos.',
-    copyrightLabel: 'Copyright',
-    cookieTitle: 'Cookies',
-    cookieBody: 'This portfolio may use local cookies for interface preferences and future analytics.',
-    cookieNecessary: 'Essential cookies',
-    cookieAnalytics: 'Analytics cookies',
-    acceptCookies: 'Accept',
-    savePreferences: 'Save preferences',
-    portfolioNote: 'Project designed to demonstrate practical on-device LLM usage in the browser with a multimodal interface, accessibility, and product-oriented thinking.',
-    versionLabel: 'Version',
-    runtimeMode: 'Active mode',
-    browserMode: 'Local Prompt API',
-    remoteMode: 'Local preparation',
-    runtimeUnavailable: 'Model download',
-    remoteConfigured: 'The session uses Chrome local Prompt API when the model is already prepared in the browser.',
-    portfolioDemoTitle: 'Demo mode',
-    portfolioDemoBody:
-      'This public version keeps the full interface visible, but real execution depends on a compatible Chrome environment with on-device AI support.',
-    portfolioDemoHint:
-      'Temperature and Top K remain available in the UI, but generation is disabled when the browser does not expose a compatible local model.',
-    browserUnavailableCta: 'Chrome still needs to prepare or enable the local model before execution.',
-  },
-  'es-ES': {
-    heroTag: 'Chrome Prompt API + Multimodal',
-    heroTitle: 'Chrome Multimodal Prompt Studio',
-    heroBody:
-      'Playground en Material UI para chat, transcripcion de audio, extraccion de texto desde imagenes, dictado por microfono y exploracion practica de Chrome Prompt API.',
-    workspace: 'Workspace',
-    multimodalInput: 'Entrada multimodal',
-    interfaceLanguage: 'Idioma de la interfaz',
-    interfaceLanguageHelp: 'Cambia los textos visibles de la interfaz para mejorar la navegacion.',
-    modelLanguage: 'Idioma del modelo',
-    modelLanguageHelp: 'Define el idioma esperado para la entrada y salida de texto de la sesion.',
-    microphoneLanguage: 'Idioma del dictado',
-    microphoneLanguageHelp: 'Define el idioma del reconocimiento de voz usado para dictar el prompt.',
-    temperature: 'Temperature',
-    topK: 'Top K',
-    prompt: 'Prompt',
-    promptPlaceholder: 'Escribe un prompt o usa el microfono para dictado.',
-    chat: 'Chat',
-    audio: 'Audio',
-    image: 'Imagen',
-    useMicrophone: 'Usar microfono',
-    stopDictation: 'Detener dictado',
-    recordAudio: 'Grabar audio',
-    stopRecording: 'Detener grabacion',
-    uploadAudio: 'Subir audio',
-    uploadImage: 'Subir imagen',
-    uploadFile: 'Subir archivo',
-    dropAudio: 'Arrastra y suelta un audio aqui o haz clic para seleccionarlo.',
-    dropImage: 'Arrastra y suelta una imagen aqui o haz clic para seleccionarla.',
-    dropFile: 'Arrastra y suelta cualquier archivo aqui o haz clic para seleccionarlo.',
-    dropPrompt: 'Tambien puedes arrastrar y soltar un archivo directamente sobre el area del prompt.',
-    selectedFile: 'Archivo seleccionado',
-    prepareModel: 'Preparar modelo local',
-    preparingModelAction: 'Preparando modelo...',
-    runTask: 'Ejecutar tarea',
-    stop: 'Detener',
-    clearPrompt: 'Limpiar prompt',
-    clearOutput: 'Limpiar salida',
-    practicalNotes: 'Notas practicas',
-    practicalNotesItems: [
-      'El soporte oficial de idioma para texto en Prompt API puede no incluir portugues.',
-      'El dictado por microfono usa Web Speech API cuando el navegador expone SpeechRecognition.',
-      'Para audio e imagen, el modelo recibe el archivo junto con el prompt y responde en texto.',
-    ],
-    output: 'Salida',
-    llmResult: 'Resultado de la LLM',
-    ideas: 'Ideas para evolucionar',
-    responsePlaceholder: 'La respuesta aparecera aqui.',
-    errorPrefix: 'Error:',
-    audioLabel: 'Audio',
-    imageLabel: 'Imagen',
-    fileLabel: 'Archivo',
-    dictationFailed: 'Error de dictado:',
-    authorNote: 'Hecho por Carlos Moura Ramos.',
-    copyrightLabel: 'Copyright',
-    cookieTitle: 'Cookies',
-    cookieBody: 'Este portafolio puede usar cookies locales para preferencias de interfaz y futuras analytics.',
-    cookieNecessary: 'Cookies esenciales',
-    cookieAnalytics: 'Cookies de analitica',
-    acceptCookies: 'Aceptar',
-    savePreferences: 'Guardar preferencias',
-    portfolioNote: 'Proyecto pensado para demostrar uso real de LLM on-device en el navegador con interfaz multimodal, accesibilidad y enfoque de producto.',
-    versionLabel: 'Version',
-    runtimeMode: 'Modo activo',
-    browserMode: 'Prompt API local',
-    remoteMode: 'Preparacion local',
-    runtimeUnavailable: 'Descarga del modelo',
-    remoteConfigured: 'La sesion usa la Prompt API local de Chrome cuando el modelo ya esta preparado en el navegador.',
-    portfolioDemoTitle: 'Modo demo',
-    portfolioDemoBody:
-      'Esta version publica mantiene la interfaz completa visible, pero la ejecucion real depende de un entorno Chrome compatible con IA on-device.',
-    portfolioDemoHint:
-      'Temperature y Top K siguen visibles en la interfaz, pero la generacion se desactiva cuando el navegador no expone un modelo local compatible.',
-    browserUnavailableCta: 'Chrome todavia necesita preparar o habilitar el modelo local antes de la ejecucion.',
-  },
 };
 
 function toPercent(progress) {
@@ -692,13 +456,12 @@ async function buildGenericFileContext(file) {
 }
 
 export default function App() {
+  const { i18n } = useTranslation();
   const sessionRef = useRef(null);
   const abortControllerRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordingChunksRef = useRef([]);
   const speechRecognitionRef = useRef(null);
-  const audioInputRef = useRef(null);
-  const imageInputRef = useRef(null);
   const genericInputRef = useRef(null);
   const outputRef = useRef(null);
 
@@ -713,7 +476,7 @@ export default function App() {
     maxTopK: 128,
   });
   const [prompt, setPrompt] = useState('');
-  const [output, setOutput] = useState(uiCopy['en-US'].responsePlaceholder);
+  const [output, setOutput] = useState(resources['en-US'].translation.responsePlaceholder);
   const [status, setStatus] = useState({ kind: 'checking', message: getStatusMessage('checking', 'en-US') });
   const [fatalError, setFatalError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -722,8 +485,6 @@ export default function App() {
   const [speechSupported, setSpeechSupported] = useState(false);
   const [audioFiles, setAudioFiles] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
-  const [isAudioDragOver, setIsAudioDragOver] = useState(false);
-  const [isImageDragOver, setIsImageDragOver] = useState(false);
   const [isPromptDragOver, setIsPromptDragOver] = useState(false);
   const [diagnostics, setDiagnostics] = useState([]);
   const [copiedLink, setCopiedLink] = useState('');
@@ -732,7 +493,8 @@ export default function App() {
     visible: true,
     analytics: false,
   });
-  const t = uiCopy[uiLanguage];
+  const effectiveTab = imageFiles.length > 0 ? 'image' : audioFiles.length > 0 ? 'audio' : tab;
+  const t = resources[uiLanguage]?.translation || resources['en-US'].translation;
   const diagnosticSections = getDiagnosticsSections(uiLanguage);
   const currentYear = new Date().getFullYear();
   const appVersion = packageJson.version;
@@ -763,7 +525,7 @@ export default function App() {
           setTopK(params.defaultTopK);
         }
 
-        const availability = await LanguageModel.availability(getAvailabilityOptions(tab, modelLanguage));
+        const availability = await LanguageModel.availability(getAvailabilityOptions(effectiveTab, modelLanguage));
         if (!active) {
           return;
         }
@@ -799,21 +561,32 @@ export default function App() {
       speechRecognitionRef.current?.stop?.();
       mediaRecorderRef.current?.stop?.();
     };
-  }, []);
+  }, [effectiveTab, modelLanguage, t.errorPrefix, uiLanguage]);
 
   useEffect(() => {
-    setPrompt(samplePrompts[tab]);
-  }, [tab]);
+    setPrompt(samplePrompts[effectiveTab]);
+  }, [effectiveTab]);
 
   useEffect(() => {
+    i18n.changeLanguage(uiLanguage);
     document.documentElement.lang = uiLanguage;
+  }, [i18n, uiLanguage]);
+
+  useEffect(() => {
+    const defaults = languageDefaultsByUiLanguage[uiLanguage];
+    if (!defaults) {
+      return;
+    }
+
+    setModelLanguage(defaults.modelLanguage);
+    setSpeechLanguage(defaults.speechLanguage);
   }, [uiLanguage]);
 
   useEffect(() => {
-    if (!output || Object.values(uiCopy).some((copy) => copy.responsePlaceholder === output)) {
+    if (!output || Object.values(resources).some((copy) => copy.translation.responsePlaceholder === output)) {
       setOutput(t.responsePlaceholder);
     }
-  }, [uiLanguage]);
+  }, [t.responsePlaceholder, uiLanguage]);
 
   useEffect(() => {
     if (!outputRef.current) {
@@ -945,7 +718,7 @@ export default function App() {
       });
     }
 
-    if (tab === 'audio') {
+    if (effectiveTab === 'audio') {
       if (audioFiles.length === 0) {
         throw new Error(getErrorMessage('audioRequired', uiLanguage));
       }
@@ -965,7 +738,7 @@ export default function App() {
       }
     }
 
-    if (tab === 'image') {
+    if (effectiveTab === 'image') {
       if (imageFiles.length === 0) {
         throw new Error(getErrorMessage('imageRequired', uiLanguage));
       }
@@ -985,39 +758,11 @@ export default function App() {
       }
     }
 
-    if (tab === 'chat' && content.length === 0) {
+    if (effectiveTab === 'chat' && content.length === 0) {
       throw new Error(getErrorMessage('promptRequired', uiLanguage));
     }
 
     return content;
-  }
-
-  function handleDroppedFiles(fileType, files) {
-    if (!files?.length) {
-      return;
-    }
-
-    if (fileType === 'audio') {
-      setAudioFiles((currentFiles) => appendFiles(currentFiles, files));
-      return;
-    }
-
-    if (fileType === 'image') {
-      setImageFiles((currentFiles) => appendFiles(currentFiles, files));
-    }
-  }
-
-  function handleDrop(event, fileType) {
-    event.preventDefault();
-
-    handleDroppedFiles(fileType, event.dataTransfer.files);
-
-    if (fileType === 'audio') {
-      setIsAudioDragOver(false);
-      return;
-    }
-
-    setIsImageDragOver(false);
   }
 
   async function handlePromptFiles(fileList) {
@@ -1077,7 +822,7 @@ export default function App() {
   }
 
   function renderGenericDropZone() {
-    const activeFiles = tab === 'image' ? imageFiles : tab === 'audio' ? audioFiles : [...imageFiles, ...audioFiles];
+    const activeFiles = effectiveTab === 'image' ? imageFiles : effectiveTab === 'audio' ? audioFiles : [...imageFiles, ...audioFiles];
 
     return (
       <Box
@@ -1138,74 +883,6 @@ export default function App() {
     );
   }
 
-  function renderDropZone(fileType) {
-    const isAudio = fileType === 'audio';
-    const isDragOver = isAudio ? isAudioDragOver : isImageDragOver;
-    const inputRef = isAudio ? audioInputRef : imageInputRef;
-    const accept = '*';
-    const helperText = isAudio ? t.dropFile : t.dropFile;
-
-    return (
-      <Box
-        role="button"
-        tabIndex={0}
-        aria-label={helperText}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            inputRef.current?.click();
-          }
-        }}
-        onDragOver={(event) => {
-          event.preventDefault();
-          if (isAudio) {
-            setIsAudioDragOver(true);
-          } else {
-            setIsImageDragOver(true);
-          }
-        }}
-        onDragLeave={() => {
-          if (isAudio) {
-            setIsAudioDragOver(false);
-          } else {
-            setIsImageDragOver(false);
-          }
-        }}
-        onDrop={(event) => handleDrop(event, fileType)}
-        sx={{
-          p: 2,
-          borderRadius: 1,
-          border: '2px dashed',
-          borderColor: isDragOver ? 'secondary.main' : 'divider',
-          backgroundColor: isDragOver ? 'rgba(33,92,115,0.08)' : 'rgba(255,255,255,0.48)',
-          cursor: 'pointer',
-          transition: 'all 160ms ease',
-          '&:focus-visible': {
-            outline: 'none',
-            borderColor: 'primary.main',
-            boxShadow: '0 0 0 3px rgba(143,61,31,0.14)',
-          },
-        }}
-      >
-        <Stack spacing={0.75}>
-          <Typography fontWeight={700}>{t.uploadFile}</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {helperText}
-          </Typography>
-        </Stack>
-        <input
-          ref={inputRef}
-          hidden
-          type="file"
-          multiple
-          accept={accept}
-          onChange={(event) => handleDroppedFiles(fileType, event.target.files)}
-        />
-      </Box>
-    );
-  }
-
   async function copyText(value) {
     try {
       await navigator.clipboard.writeText(value);
@@ -1236,10 +913,9 @@ export default function App() {
 
   function clearPromptInputs() {
     setPrompt('');
+    setTab('chat');
     setAudioFiles([]);
     setImageFiles([]);
-    setIsAudioDragOver(false);
-    setIsImageDragOver(false);
     setIsPromptDragOver(false);
   }
 
@@ -1257,9 +933,9 @@ export default function App() {
     }
 
     try {
-      const availability = await LanguageModel.availability(getAvailabilityOptions(tab, modelLanguage));
+      const availability = await LanguageModel.availability(getAvailabilityOptions(effectiveTab, modelLanguage));
       const resolvedKind = resolveAvailabilityKind(availability);
-      const sessionOptions = getAvailabilityOptions(tab, modelLanguage);
+      const sessionOptions = getAvailabilityOptions(effectiveTab, modelLanguage);
 
       setStatus({
         kind: resolvedKind,
@@ -1290,7 +966,7 @@ export default function App() {
             content: [
               {
                 type: 'text',
-                value: buildSystemPrompt(tab, modelLanguage),
+                value: buildSystemPrompt(effectiveTab, modelLanguage),
               },
             ],
           },
@@ -1441,7 +1117,7 @@ export default function App() {
                   </Paper>
 
                   <Grid container spacing={1.25}>
-                    {portfolioHighlights.slice(0, 3).map((item) => (
+                    {t.portfolioHighlights.map((item) => (
                       <Grid key={item.label} size={{ xs: 12 }}>
                         <Paper
                           variant="outlined"
@@ -1587,7 +1263,7 @@ export default function App() {
           <Grid container spacing={3}>
             <Grid size={{ xs: 12 }}>
               <Grid container spacing={2}>
-                {portfolioUseCases.map((item) => (
+                {t.portfolioUseCases.map((item) => (
                   <Grid key={item} size={{ xs: 12, md: 4 }}>
                     <Paper
                       elevation={0}
@@ -1647,68 +1323,7 @@ export default function App() {
                       <FormHelperText id="ui-language-help">{t.interfaceLanguageHelp}</FormHelperText>
                     </FormControl>
 
-                    <Tabs
-                      value={tab}
-                      onChange={(_, value) => setTab(value)}
-                      variant="fullWidth"
-                      aria-label={t.multimodalInput}
-                      sx={{
-                        minHeight: 42,
-                        '& .MuiTab-root': {
-                          minHeight: 42,
-                          fontSize: '0.82rem',
-                          fontWeight: 700,
-                        },
-                      }}
-                    >
-                      <Tab icon={<AutoAwesomeRounded />} iconPosition="start" label={t.chat} value="chat" />
-                      <Tab icon={<GraphicEqRounded />} iconPosition="start" label={t.audio} value="audio" />
-                      <Tab icon={<ImageSearchRounded />} iconPosition="start" label={t.image} value="image" />
-                    </Tabs>
-
                     <Grid container spacing={2}>
-                      <Grid size={{ xs: 12, sm: 6 }}>
-                        <FormControl fullWidth>
-                          <InputLabel id="language-label">{t.modelLanguage}</InputLabel>
-                          <Select
-                            labelId="language-label"
-                            value={modelLanguage}
-                            label={t.modelLanguage}
-                            onChange={(event) => setModelLanguage(event.target.value)}
-                            inputProps={{
-                              'aria-label': t.modelLanguage,
-                              'aria-describedby': 'model-language-help',
-                            }}
-                          >
-                            <MenuItem value="en">English</MenuItem>
-                            <MenuItem value="es">Espanol</MenuItem>
-                            <MenuItem value="ja">Japanese</MenuItem>
-                          </Select>
-                          <FormHelperText id="model-language-help">{t.modelLanguageHelp}</FormHelperText>
-                        </FormControl>
-                      </Grid>
-
-                      <Grid size={{ xs: 12, sm: 6 }}>
-                        <FormControl fullWidth>
-                          <InputLabel id="speech-language-label">{t.microphoneLanguage}</InputLabel>
-                          <Select
-                            labelId="speech-language-label"
-                            value={speechLanguage}
-                            label={t.microphoneLanguage}
-                            onChange={(event) => setSpeechLanguage(event.target.value)}
-                            inputProps={{
-                              'aria-label': t.microphoneLanguage,
-                              'aria-describedby': 'speech-language-help',
-                            }}
-                          >
-                            <MenuItem value="pt-BR">Portuguese (Brazil)</MenuItem>
-                            <MenuItem value="en-US">English (US)</MenuItem>
-                            <MenuItem value="es-ES">Spanish (Spain)</MenuItem>
-                          </Select>
-                          <FormHelperText id="speech-language-help">{t.microphoneLanguageHelp}</FormHelperText>
-                        </FormControl>
-                      </Grid>
-
                       <Grid size={{ xs: 12, sm: 6 }}>
                         <Stack spacing={1}>
                           <Typography variant="body2" fontWeight={700}>
@@ -1804,7 +1419,7 @@ export default function App() {
                         color="secondary"
                         startIcon={isRecording ? <StopCircleRounded /> : <GraphicEqRounded />}
                         onClick={isRecording ? stopAudioRecording : createAudioRecording}
-                        disabled={tab !== 'audio' || !!fatalError}
+                        disabled={effectiveTab !== 'audio' || !!fatalError}
                       >
                         {isRecording ? t.stopRecording : t.recordAudio}
                       </Button>
@@ -1881,7 +1496,7 @@ export default function App() {
                     {t.ideas}
                   </Typography>
                   <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                    {ideaCards.map((idea) => (
+                    {t.ideaCards.map((idea) => (
                       <Grid key={idea} size={{ xs: 12, md: 6 }}>
                         <Card
                           variant="outlined"

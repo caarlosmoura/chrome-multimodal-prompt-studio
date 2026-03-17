@@ -1,8 +1,8 @@
 # Chrome Multimodal Prompt Studio
 
-React + Material UI portfolio project that showcases a multimodal LLM running directly in the browser through the Chrome Prompt API, with text, audio, and image inputs.
+React + Material UI portfolio project that showcases a multimodal LLM running directly in the browser through the Chrome Prompt API, with text, audio, image, and generic file inputs.
 
-Made by Carlos Moura Ramos. Copyright © 2026 Carlos Moura Ramos.
+Made by Carlos Moura Ramos. Copyright (c) 2026 Carlos Moura Ramos.
 
 Current version: `1.0.0`
 
@@ -13,7 +13,7 @@ This project shows how to build a web interface that talks to an on-device LLM, 
 In practice, that means the application:
 
 - uses an LLM directly from the browser
-- combines multiple input modalities such as text, audio, and image
+- combines multiple input modalities such as text, audio, image, and attached files
 - allows generation controls such as `temperature` and `topK`
 - supports multimodal workflows without depending on a traditional remote inference API in the main flow
 
@@ -52,11 +52,11 @@ Because Prompt API is still experimental, exact behavior, supported languages, a
 - Adjustable `temperature` and `topK`
 - Interface language selector for product demos and usability
 - Chat, audio transcription, and image text extraction flows
-- Audio and image upload support
-- Drag and drop for audio and image files
+- Unified file upload and drag-and-drop for text, audio, image, and generic files
 - Microphone recording for multimodal audio input
 - Prompt dictation through Web Speech API when `SpeechRecognition` is available
 - Streaming output rendering
+- Auto-scrolling output panel during streaming
 - Download/preparation status feedback for the local model
 - Accessibility improvements with labels, helper text, keyboard-friendly controls, and screen-reader-oriented attributes
 - Cookie banner for local preferences and future analytics readiness
@@ -67,6 +67,7 @@ Because Prompt API is still experimental, exact behavior, supported languages, a
 - React
 - Vite
 - Material UI
+- react-i18next
 - Chrome Prompt API for browser-based LLM access
 - Web Speech API
 - MediaRecorder API
@@ -123,7 +124,7 @@ FTP_SECURE=true
 - Built with Material UI
 - Interface language selector with Portuguese, English, and Spanish options
 - Main fields include labels, helper text, and accessibility attributes for keyboard navigation and screen readers
-- Drag and drop zones can also be activated by click or keyboard
+- The persistent drag-and-drop zone can also be activated by click or keyboard
 - Portfolio footer includes authorship, copyright, and version information
 
 ## Browser requirements
@@ -141,7 +142,7 @@ Check the official documentation for the current API state:
 - Official Prompt API text language support may not include `pt-BR`
 - Speech recognition depends on `SpeechRecognition` availability in the browser
 - OCR, transcription, and extraction quality depend on the local model and the capabilities exposed by the current Chrome version
-- The UI language can be changed freely, but the actual model languages still depend on the Prompt API capabilities available in the running browser
+- The UI language can be changed freely, but the actual model and dictation languages are inferred from the selected interface language and still depend on the Prompt API capabilities available in the running browser
 - The current cookie banner covers local preferences and keeps the project ready for future analytics instrumentation
 
 ## Future ideas
