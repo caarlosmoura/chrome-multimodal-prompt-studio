@@ -76,17 +76,37 @@ const ideaCards = [
 ];
 
 const portfolioHighlights = [
-  { label: 'Entradas', value: 'Texto, audio e imagem' },
-  { label: 'Controle', value: 'Temperature e Top K' },
-  { label: 'UX', value: 'Material UI acessivel' },
-  { label: 'Execucao', value: 'LLM no navegador' },
+  { label: 'Inputs', value: 'Text, audio, image' },
+  { label: 'Controls', value: 'Temperature + Top K' },
+  { label: 'UX', value: 'Accessible Material UI' },
+  { label: 'Runtime', value: 'Browser-based LLM' },
 ];
 
 const portfolioUseCases = [
-  'Transcricao de reunioes com extracao de decisoes e prazos.',
-  'Leitura de comprovantes, telas e documentos por imagem.',
-  'Assistente multimodal para suporte interno e analise operacional.',
+  'Meeting transcription with action items and deadlines.',
+  'Receipt, screenshot, and document reading from images.',
+  'Multimodal assistant for internal support and operational analysis.',
 ];
+
+const BALLOON_SURFACE_SX = {
+  border: '1px solid rgba(47,34,24,0.12)',
+  borderRadius: 0.5,
+  background: 'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,246,238,0.92))',
+};
+
+const HERO_BALLOON_SX = {
+  ...BALLOON_SURFACE_SX,
+  borderRadius: 0.5,
+  boxShadow: 'none',
+  overflow: 'hidden',
+};
+
+const HERO_COMPACT_CARD_SX = {
+  ...HERO_BALLOON_SX,
+  borderRadius: 0.5,
+  py: 1.1,
+  px: 1.35,
+};
 
 const uiCopy = {
   'pt-BR': {
@@ -115,17 +135,30 @@ const uiCopy = {
     stopRecording: 'Parar gravacao',
     uploadAudio: 'Enviar audio',
     uploadImage: 'Enviar imagem',
+    uploadFile: 'Enviar arquivo',
     dropAudio: 'Arraste e solte um audio aqui ou clique para selecionar.',
     dropImage: 'Arraste e solte uma imagem aqui ou clique para selecionar.',
+    dropFile: 'Arraste e solte um arquivo aqui ou clique para selecionar.',
+    dropPrompt: 'Voce tambem pode arrastar e soltar um arquivo diretamente na area do prompt.',
     selectedFile: 'Arquivo selecionado',
     runTask: 'Executar tarefa',
     stop: 'Interromper',
     clearOutput: 'Limpar output',
     practicalNotes: 'Observacoes praticas',
+    practicalNotesItems: [
+      'O suporte oficial de idioma do texto na Prompt API pode nao incluir portugues.',
+      'O ditado do microfone usa Web Speech API quando o navegador expoe SpeechRecognition.',
+      'Para audio e imagem, o modelo recebe o arquivo junto com o prompt e responde em texto.',
+    ],
     output: 'Output',
     llmResult: 'Resultado da LLM',
     ideas: 'Ideias para evoluir',
     responsePlaceholder: 'A resposta vai aparecer aqui.',
+    errorPrefix: 'Erro:',
+    audioLabel: 'Audio',
+    imageLabel: 'Imagem',
+    fileLabel: 'Arquivo',
+    dictationFailed: 'Falha no ditado:',
     authorNote: 'Feito por Carlos Moura Ramos.',
     copyrightLabel: 'Copyright',
     cookieTitle: 'Cookies',
@@ -136,6 +169,17 @@ const uiCopy = {
     savePreferences: 'Salvar preferencias',
     portfolioNote: 'Projeto pensado para demonstrar uso real de LLM on-device no navegador com interface multimodal, foco em acessibilidade e valor de produto.',
     versionLabel: 'Versao',
+    runtimeMode: 'Modo ativo',
+    browserMode: 'Prompt API local',
+    remoteMode: 'Fallback remoto',
+    runtimeUnavailable: 'Modo demonstracao',
+    remoteConfigured: 'Endpoint remoto configurado para preservar temperature e topK quando o modelo local nao estiver disponivel.',
+    portfolioDemoTitle: 'Demo mode',
+    portfolioDemoBody:
+      'This public version keeps the complete interface visible, but real execution depends on a compatible Chrome environment with on-device AI support.',
+    portfolioDemoHint:
+      'Temperature and Top K are preserved in the UI, but generation is disabled when the browser does not provide a compatible local model.',
+    browserUnavailableCta: 'Execution requires a compatible device or a future backend fallback.',
   },
   'en-US': {
     heroTag: 'Chrome Prompt API + Multimodal',
@@ -163,17 +207,30 @@ const uiCopy = {
     stopRecording: 'Stop recording',
     uploadAudio: 'Upload audio',
     uploadImage: 'Upload image',
+    uploadFile: 'Upload file',
     dropAudio: 'Drag and drop an audio file here or click to select.',
     dropImage: 'Drag and drop an image file here or click to select.',
+    dropFile: 'Drag and drop any file here or click to select.',
+    dropPrompt: 'You can also drag and drop a file directly onto the prompt area.',
     selectedFile: 'Selected file',
     runTask: 'Run task',
     stop: 'Stop',
     clearOutput: 'Clear output',
     practicalNotes: 'Practical notes',
+    practicalNotesItems: [
+      'Official Prompt API text language support may not include Portuguese.',
+      'Microphone dictation uses the Web Speech API when the browser exposes SpeechRecognition.',
+      'For audio and image flows, the model receives the file together with the prompt and responds in text.',
+    ],
     output: 'Output',
     llmResult: 'LLM result',
     ideas: 'Ideas to explore',
     responsePlaceholder: 'The response will appear here.',
+    errorPrefix: 'Error:',
+    audioLabel: 'Audio',
+    imageLabel: 'Image',
+    fileLabel: 'File',
+    dictationFailed: 'Dictation failed:',
     authorNote: 'Made by Carlos Moura Ramos.',
     copyrightLabel: 'Copyright',
     cookieTitle: 'Cookies',
@@ -184,6 +241,17 @@ const uiCopy = {
     savePreferences: 'Save preferences',
     portfolioNote: 'Project designed to demonstrate practical on-device LLM usage in the browser with a multimodal interface, accessibility, and product-oriented thinking.',
     versionLabel: 'Version',
+    runtimeMode: 'Active mode',
+    browserMode: 'Local Prompt API',
+    remoteMode: 'Remote fallback',
+    runtimeUnavailable: 'Demo mode',
+    remoteConfigured: 'A remote endpoint is configured to preserve temperature and topK when the local model is unavailable.',
+    portfolioDemoTitle: 'Demo mode',
+    portfolioDemoBody:
+      'This public version keeps the full interface visible, but real execution depends on a compatible Chrome environment with on-device AI support.',
+    portfolioDemoHint:
+      'Temperature and Top K remain available in the UI, but generation is disabled when the browser does not expose a compatible local model.',
+    browserUnavailableCta: 'Execution requires a compatible device or a future backend fallback.',
   },
   'es-ES': {
     heroTag: 'Chrome Prompt API + Multimodal',
@@ -211,17 +279,30 @@ const uiCopy = {
     stopRecording: 'Detener grabacion',
     uploadAudio: 'Subir audio',
     uploadImage: 'Subir imagen',
+    uploadFile: 'Subir archivo',
     dropAudio: 'Arrastra y suelta un audio aqui o haz clic para seleccionarlo.',
     dropImage: 'Arrastra y suelta una imagen aqui o haz clic para seleccionarla.',
+    dropFile: 'Arrastra y suelta cualquier archivo aqui o haz clic para seleccionarlo.',
+    dropPrompt: 'Tambien puedes arrastrar y soltar un archivo directamente sobre el area del prompt.',
     selectedFile: 'Archivo seleccionado',
     runTask: 'Ejecutar tarea',
     stop: 'Detener',
     clearOutput: 'Limpiar salida',
     practicalNotes: 'Notas practicas',
+    practicalNotesItems: [
+      'El soporte oficial de idioma para texto en Prompt API puede no incluir portugues.',
+      'El dictado por microfono usa Web Speech API cuando el navegador expone SpeechRecognition.',
+      'Para audio e imagen, el modelo recibe el archivo junto con el prompt y responde en texto.',
+    ],
     output: 'Salida',
     llmResult: 'Resultado de la LLM',
     ideas: 'Ideas para evolucionar',
     responsePlaceholder: 'La respuesta aparecera aqui.',
+    errorPrefix: 'Error:',
+    audioLabel: 'Audio',
+    imageLabel: 'Imagen',
+    fileLabel: 'Archivo',
+    dictationFailed: 'Error de dictado:',
     authorNote: 'Hecho por Carlos Moura Ramos.',
     copyrightLabel: 'Copyright',
     cookieTitle: 'Cookies',
@@ -232,6 +313,17 @@ const uiCopy = {
     savePreferences: 'Guardar preferencias',
     portfolioNote: 'Proyecto pensado para demostrar uso real de LLM on-device en el navegador con interfaz multimodal, accesibilidad y enfoque de producto.',
     versionLabel: 'Version',
+    runtimeMode: 'Modo activo',
+    browserMode: 'Prompt API local',
+    remoteMode: 'Fallback remoto',
+    runtimeUnavailable: 'Modo demo',
+    remoteConfigured: 'Hay un endpoint remoto configurado para conservar temperature y topK cuando el modelo local no esta disponible.',
+    portfolioDemoTitle: 'Modo demo',
+    portfolioDemoBody:
+      'Esta version publica mantiene la interfaz completa visible, pero la ejecucion real depende de un entorno Chrome compatible con IA on-device.',
+    portfolioDemoHint:
+      'Temperature y Top K siguen visibles en la interfaz, pero la generacion se desactiva cuando el navegador no expone un modelo local compatible.',
+    browserUnavailableCta: 'La ejecucion requiere un dispositivo compatible o un futuro backend fallback.',
   },
 };
 
@@ -263,22 +355,50 @@ function getStatusTone(kind) {
   return 'warning';
 }
 
-function getStatusMessage(kind) {
+function getStatusMessage(kind, uiLanguage) {
   const messages = {
-    checking: 'Validando o navegador e a disponibilidade do modelo.',
-    ready: 'Modelo pronto para uso.',
-    available: 'Modelo pronto para uso.',
-    downloadable: 'O modelo precisa ser preparado localmente pelo Chrome.',
-    downloading: 'O navegador esta baixando ou preparando o modelo local.',
-    generating: 'Sessao ativa. Recebendo resposta em streaming.',
-    complete: 'Resposta concluida.',
-    unavailable: 'O modelo local nao esta disponivel neste dispositivo.',
-    stopped: 'Geracao interrompida pelo usuario.',
-    error: 'O ambiente atual nao esta pronto para usar a Prompt API.',
-    attention: 'A API retornou um estado que exige acao do usuario.',
+    'pt-BR': {
+      checking: 'Validando o navegador e a disponibilidade do modelo.',
+      ready: 'Modelo pronto para uso.',
+      available: 'Modelo pronto para uso.',
+      downloadable: 'O modelo precisa ser preparado localmente pelo Chrome.',
+      downloading: 'O navegador esta baixando ou preparando o modelo local.',
+      generating: 'Sessao ativa. Recebendo resposta em streaming.',
+      complete: 'Resposta concluida.',
+      unavailable: 'O modelo local nao esta disponivel neste dispositivo.',
+      stopped: 'Geracao interrompida pelo usuario.',
+      error: 'O ambiente atual nao esta pronto para usar a Prompt API.',
+      attention: 'A API retornou um estado que exige acao do usuario.',
+    },
+    'en-US': {
+      checking: 'Checking browser support and model availability.',
+      ready: 'Model ready to use.',
+      available: 'Model ready to use.',
+      downloadable: 'The model still needs to be prepared locally by Chrome.',
+      downloading: 'Chrome is downloading or preparing the local model.',
+      generating: 'Active session. Receiving the response in streaming mode.',
+      complete: 'Response completed.',
+      unavailable: 'The local model is not available on this device.',
+      stopped: 'Generation stopped by the user.',
+      error: 'The current environment is not ready to use the Prompt API.',
+      attention: 'The API returned a state that requires user action.',
+    },
+    'es-ES': {
+      checking: 'Validando el navegador y la disponibilidad del modelo.',
+      ready: 'Modelo listo para usar.',
+      available: 'Modelo listo para usar.',
+      downloadable: 'Chrome todavia necesita preparar el modelo localmente.',
+      downloading: 'Chrome esta descargando o preparando el modelo local.',
+      generating: 'Sesion activa. Recibiendo la respuesta en streaming.',
+      complete: 'Respuesta finalizada.',
+      unavailable: 'El modelo local no esta disponible en este dispositivo.',
+      stopped: 'La generacion fue detenida por el usuario.',
+      error: 'El entorno actual no esta listo para usar la Prompt API.',
+      attention: 'La API devolvio un estado que requiere accion del usuario.',
+    },
   };
 
-  return messages[kind] || 'Status desconhecido.';
+  return messages[uiLanguage]?.[kind] || messages['en-US']?.[kind] || kind;
 }
 
 function getUnavailableDiagnostics(uiLanguage) {
@@ -320,6 +440,73 @@ function getDiagnosticsTitle(uiLanguage) {
   };
 
   return titles[uiLanguage] || titles['en-US'];
+}
+
+function getErrorMessage(key, uiLanguage) {
+  const messages = {
+    unsupportedBrowser: {
+      'pt-BR': 'Use Google Chrome ou Chrome Canary para testar a Prompt API.',
+      'en-US': 'Use Google Chrome or Chrome Canary to test the Prompt API.',
+      'es-ES': 'Usa Google Chrome o Chrome Canary para probar la Prompt API.',
+    },
+    promptApiDisabled: {
+      'pt-BR': 'A Prompt API nao esta ativa. Habilite as flags necessarias do Chrome.',
+      'en-US': 'Prompt API is not enabled. Turn on the required Chrome flags.',
+      'es-ES': 'La Prompt API no esta activa. Habilita las flags necesarias de Chrome.',
+    },
+    speechUnavailable: {
+      'pt-BR': 'SpeechRecognition nao esta disponivel neste navegador.',
+      'en-US': 'SpeechRecognition is not available in this browser.',
+      'es-ES': 'SpeechRecognition no esta disponible en este navegador.',
+    },
+    dictationActive: {
+      'pt-BR': 'Microfone ativo para ditado do prompt.',
+      'en-US': 'Microphone active for prompt dictation.',
+      'es-ES': 'Microfono activo para dictado del prompt.',
+    },
+    copyFailed: {
+      'pt-BR': 'Nao foi possivel copiar automaticamente. Copie manualmente.',
+      'en-US': 'Automatic copy failed. Please copy it manually.',
+      'es-ES': 'No fue posible copiar automaticamente. Copialo manualmente.',
+    },
+    audioRequired: {
+      'pt-BR': 'Envie ou grave um audio antes de solicitar a transcricao.',
+      'en-US': 'Upload or record an audio file before requesting transcription.',
+      'es-ES': 'Sube o graba un audio antes de solicitar la transcripcion.',
+    },
+    imageRequired: {
+      'pt-BR': 'Envie uma imagem antes de solicitar a extracao.',
+      'en-US': 'Upload an image before requesting extraction.',
+      'es-ES': 'Sube una imagen antes de solicitar la extraccion.',
+    },
+    promptRequired: {
+      'pt-BR': 'Digite um prompt antes de enviar.',
+      'en-US': 'Type a prompt before submitting.',
+      'es-ES': 'Escribe un prompt antes de enviar.',
+    },
+    modelUnavailable: {
+      'pt-BR': 'O modelo local nao esta disponivel neste dispositivo.',
+      'en-US': 'The local model is not available on this device.',
+      'es-ES': 'El modelo local no esta disponible en este dispositivo.',
+    },
+    preparingSession: {
+      'pt-BR': 'Preparando sessao...',
+      'en-US': 'Preparing session...',
+      'es-ES': 'Preparando sesion...',
+    },
+    preparingModel: {
+      'pt-BR': 'Baixando ou preparando o modelo local no Chrome...',
+      'en-US': 'Downloading or preparing the local model in Chrome...',
+      'es-ES': 'Descargando o preparando el modelo local en Chrome...',
+    },
+    copied: {
+      'pt-BR': 'Copiado:',
+      'en-US': 'Copied:',
+      'es-ES': 'Copiado:',
+    },
+  };
+
+  return messages[key]?.[uiLanguage] || messages[key]?.['en-US'] || key;
 }
 
 function getDiagnosticsSections(uiLanguage) {
@@ -420,6 +607,50 @@ function buildSystemPrompt(tab, language) {
   return taskInstructions[tab][language];
 }
 
+function formatFileSize(size) {
+  if (!Number.isFinite(size)) {
+    return 'unknown size';
+  }
+
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function isTextLikeFile(file) {
+  return (
+    file.type.startsWith('text/') ||
+    ['application/json', 'application/xml', 'text/csv'].includes(file.type) ||
+    /\.(txt|md|json|csv|xml|log|js|ts|jsx|tsx|html|css|yml|yaml)$/i.test(file.name)
+  );
+}
+
+async function buildGenericFileContext(file) {
+  const metadata = [
+    `Attached file name: ${file.name}`,
+    `Type: ${file.type || 'unknown'}`,
+    `Size: ${formatFileSize(file.size)}`,
+  ].join('\n');
+
+  if (!isTextLikeFile(file)) {
+    return `${metadata}\nThe file is not natively supported as image/audio input here, so use the metadata as context.`;
+  }
+
+  try {
+    const text = await file.text();
+    const excerpt = text.slice(0, 12000);
+    return `${metadata}\n\nFile content excerpt:\n${excerpt}`;
+  } catch {
+    return `${metadata}\nThe file could not be read as text, so use only the metadata as context.`;
+  }
+}
+
 export default function App() {
   const sessionRef = useRef(null);
   const abortControllerRef = useRef(null);
@@ -437,8 +668,8 @@ export default function App() {
   const [temperature, setTemperature] = useState(1);
   const [topK, setTopK] = useState(3);
   const [prompt, setPrompt] = useState('');
-  const [output, setOutput] = useState('A resposta vai aparecer aqui.');
-  const [status, setStatus] = useState({ kind: 'checking', message: getStatusMessage('checking') });
+  const [output, setOutput] = useState(uiCopy['en-US'].responsePlaceholder);
+  const [status, setStatus] = useState({ kind: 'checking', message: getStatusMessage('checking', 'en-US') });
   const [fatalError, setFatalError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
@@ -448,8 +679,10 @@ export default function App() {
   const [imageFile, setImageFile] = useState(null);
   const [isAudioDragOver, setIsAudioDragOver] = useState(false);
   const [isImageDragOver, setIsImageDragOver] = useState(false);
+  const [isPromptDragOver, setIsPromptDragOver] = useState(false);
   const [diagnostics, setDiagnostics] = useState([]);
   const [copiedLink, setCopiedLink] = useState('');
+  const [runtimeMode, setRuntimeMode] = useState('browser');
   const [cookieConsent, setCookieConsent] = useState({
     visible: true,
     analytics: false,
@@ -490,9 +723,10 @@ export default function App() {
         }
 
         const resolvedKind = availability === 'available' ? 'ready' : availability;
+        setRuntimeMode(availability === 'unavailable' ? 'demo' : 'browser');
         setStatus({
           kind: resolvedKind,
-          message: getStatusMessage(resolvedKind),
+          message: getStatusMessage(resolvedKind, uiLanguage),
         });
         setDiagnostics(availability === 'unavailable' ? getUnavailableDiagnostics(uiLanguage) : []);
       } catch (error) {
@@ -506,7 +740,7 @@ export default function App() {
           message: error.message,
         });
         setDiagnostics([]);
-        setOutput(`Erro: ${error.message}`);
+        setOutput(`${t.errorPrefix} ${error.message}`);
       }
     }
 
@@ -527,6 +761,12 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.lang = uiLanguage;
+  }, [uiLanguage]);
+
+  useEffect(() => {
+    if (!output || Object.values(uiCopy).some((copy) => copy.responsePlaceholder === output)) {
+      setOutput(t.responsePlaceholder);
+    }
   }, [uiLanguage]);
 
   useEffect(() => {
@@ -581,10 +821,10 @@ export default function App() {
   function toggleDictation() {
     const recognitionCtor = getSpeechRecognition();
     if (!recognitionCtor) {
-      setStatus({
-        kind: 'attention',
-        message: 'SpeechRecognition nao esta disponivel neste navegador.',
-      });
+        setStatus({
+          kind: 'attention',
+          message: getErrorMessage('speechUnavailable', uiLanguage),
+        });
       return;
     }
 
@@ -603,7 +843,7 @@ export default function App() {
       setIsDictating(true);
       setStatus({
         kind: 'attention',
-        message: 'Microfone ativo para ditado do prompt.',
+        message: getErrorMessage('dictationActive', uiLanguage),
       });
     };
 
@@ -620,7 +860,7 @@ export default function App() {
       setIsDictating(false);
       setStatus({
         kind: 'attention',
-        message: `Falha no ditado: ${event.error}`,
+        message: `${t.dictationFailed} ${event.error}`,
       });
     };
 
@@ -633,7 +873,7 @@ export default function App() {
 
         return {
           kind: 'ready',
-          message: getStatusMessage('ready'),
+          message: getStatusMessage('ready', uiLanguage),
         };
       });
     };
@@ -653,28 +893,42 @@ export default function App() {
 
     if (tab === 'audio') {
       if (!audioFile) {
-        throw new Error('Envie ou grave um audio antes de solicitar a transcricao.');
+        throw new Error(getErrorMessage('audioRequired', uiLanguage));
       }
 
-      content.push({
-        type: 'audio',
-        value: audioFile,
-      });
+      if (audioFile.type.startsWith('audio/')) {
+        content.push({
+          type: 'audio',
+          value: audioFile,
+        });
+      } else {
+        content.push({
+          type: 'text',
+          value: await buildGenericFileContext(audioFile),
+        });
+      }
     }
 
     if (tab === 'image') {
       if (!imageFile) {
-        throw new Error('Envie uma imagem antes de solicitar a extracao.');
+        throw new Error(getErrorMessage('imageRequired', uiLanguage));
       }
 
-      content.push({
-        type: 'image',
-        value: imageFile,
-      });
+      if (imageFile.type.startsWith('image/')) {
+        content.push({
+          type: 'image',
+          value: imageFile,
+        });
+      } else {
+        content.push({
+          type: 'text',
+          value: await buildGenericFileContext(imageFile),
+        });
+      }
     }
 
     if (tab === 'chat' && content.length === 0) {
-      throw new Error('Digite um prompt antes de enviar.');
+      throw new Error(getErrorMessage('promptRequired', uiLanguage));
     }
 
     return content;
@@ -709,13 +963,30 @@ export default function App() {
     setIsImageDragOver(false);
   }
 
+  function handlePromptDrop(event) {
+    event.preventDefault();
+    setIsPromptDragOver(false);
+
+    const file = event.dataTransfer.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (tab === 'image') {
+      setImageFile(file);
+      return;
+    }
+
+    setAudioFile(file);
+  }
+
   function renderDropZone(fileType) {
     const isAudio = fileType === 'audio';
     const isDragOver = isAudio ? isAudioDragOver : isImageDragOver;
     const file = isAudio ? audioFile : imageFile;
     const inputRef = isAudio ? audioInputRef : imageInputRef;
-    const accept = isAudio ? 'audio/*' : 'image/*';
-    const helperText = isAudio ? t.dropAudio : t.dropImage;
+    const accept = '*';
+    const helperText = isAudio ? t.dropFile : t.dropFile;
 
     return (
       <Box
@@ -747,7 +1018,7 @@ export default function App() {
         onDrop={(event) => handleDrop(event, fileType)}
         sx={{
           p: 2,
-          borderRadius: 4,
+          borderRadius: 1,
           border: '2px dashed',
           borderColor: isDragOver ? 'secondary.main' : 'divider',
           backgroundColor: isDragOver ? 'rgba(33,92,115,0.08)' : 'rgba(255,255,255,0.48)',
@@ -761,7 +1032,7 @@ export default function App() {
         }}
       >
         <Stack spacing={0.75}>
-          <Typography fontWeight={700}>{isAudio ? t.uploadAudio : t.uploadImage}</Typography>
+          <Typography fontWeight={700}>{t.uploadFile}</Typography>
           <Typography variant="body2" color="text.secondary">
             {helperText}
           </Typography>
@@ -794,7 +1065,7 @@ export default function App() {
     } catch {
       setStatus({
         kind: 'attention',
-        message: 'Nao foi possivel copiar automaticamente. Copie manualmente.',
+        message: getErrorMessage('copyFailed', uiLanguage),
       });
     }
   }
@@ -826,7 +1097,7 @@ export default function App() {
       setIsGenerating(false);
       setStatus({
         kind: 'stopped',
-        message: getStatusMessage('stopped'),
+        message: getStatusMessage('stopped', uiLanguage),
       });
       return;
     }
@@ -837,16 +1108,17 @@ export default function App() {
 
       setStatus({
         kind: resolvedKind,
-        message: getStatusMessage(resolvedKind),
+        message: getStatusMessage(resolvedKind, uiLanguage),
       });
       setDiagnostics(availability === 'unavailable' ? getUnavailableDiagnostics(uiLanguage) : []);
 
       if (availability === 'unavailable') {
-        throw new Error('O modelo local nao esta disponivel neste dispositivo.');
+        setRuntimeMode('demo');
+        throw new Error(getErrorMessage('modelUnavailable', uiLanguage));
       }
 
       setIsGenerating(true);
-      setOutput('Preparando sessao...');
+      setOutput(getErrorMessage('preparingSession', uiLanguage));
 
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
@@ -857,6 +1129,8 @@ export default function App() {
       setTopK(safeTopK);
 
       const userContent = await buildUserContent();
+
+      setRuntimeMode('browser');
 
       sessionRef.current = await LanguageModel.create({
         expectedInputs: [
@@ -885,7 +1159,7 @@ export default function App() {
               kind: 'downloading',
               message: `Preparando modelo local: ${percent}%`,
             });
-            setOutput('Baixando ou preparando o modelo local no Chrome...');
+            setOutput(getErrorMessage('preparingModel', uiLanguage));
           });
         },
       });
@@ -904,7 +1178,7 @@ export default function App() {
 
       setStatus({
         kind: 'generating',
-        message: getStatusMessage('generating'),
+        message: getStatusMessage('generating', uiLanguage),
       });
       setOutput('');
 
@@ -921,16 +1195,16 @@ export default function App() {
       if (!abortControllerRef.current.signal.aborted) {
         setStatus({
           kind: 'complete',
-          message: getStatusMessage('complete'),
+          message: getStatusMessage('complete', uiLanguage),
         });
       }
     } catch (error) {
-      setOutput(`Erro: ${error.message}`);
+      setOutput(`${t.errorPrefix} ${error.message}`);
       setStatus({
         kind: 'attention',
         message: error.message,
       });
-      if (String(error.message).includes('nao esta disponivel')) {
+      if (String(error.message).includes(getErrorMessage('modelUnavailable', uiLanguage))) {
         setDiagnostics(getUnavailableDiagnostics(uiLanguage));
       }
     } finally {
@@ -944,23 +1218,24 @@ export default function App() {
         minHeight: '100vh',
         background:
           'radial-gradient(circle at top left, rgba(143,61,31,0.16), transparent 28%), radial-gradient(circle at bottom right, rgba(33,92,115,0.18), transparent 28%), linear-gradient(180deg, #f5eee5 0%, #ede0d0 100%)',
-        py: { xs: 3, md: 5 },
+        py: { xs: 2.5, md: 4 },
       }}
     >
-      <Container maxWidth="xl">
-        <Stack spacing={2.5}>
+      <Container maxWidth="xl" sx={{ pb: cookieConsent.visible ? { xs: 14, md: 10 } : 0 }}>
+        <Stack spacing={2}>
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 2.5, md: 3.5 },
+              p: { xs: 2.25, md: 3 },
               border: '1px solid rgba(47,34,24,0.08)',
-              background: 'linear-gradient(135deg, rgba(255,250,246,0.94), rgba(255,241,231,0.88))',
-              boxShadow: '0 22px 50px rgba(76, 48, 24, 0.09)',
+              background: 'linear-gradient(135deg, rgba(255,250,246,0.96), rgba(255,243,236,0.9))',
+              boxShadow: '0 14px 34px rgba(76, 48, 24, 0.08)',
+              overflow: 'hidden',
             }}
           >
             <Grid container spacing={3} alignItems="center">
-              <Grid size={{ xs: 12, lg: 8 }}>
-                <Stack spacing={2}>
+              <Grid size={{ xs: 12, lg: 7.5 }}>
+                <Stack spacing={1.6}>
                   <Chip
                     icon={<PsychologyAltRounded />}
                     label={t.heroTag}
@@ -971,55 +1246,92 @@ export default function App() {
                   <Typography
                     variant="h1"
                     sx={{
-                      fontSize: { xs: '1.8rem', md: '3.2rem' },
-                      whiteSpace: { md: 'nowrap' },
+                      fontSize: { xs: '2rem', md: '3rem' },
+                      letterSpacing: '-0.05em',
+                      lineHeight: 0.96,
                     }}
                   >
                     {t.heroTitle}
                   </Typography>
-                  <Typography sx={{ maxWidth: 780, color: 'text.secondary', fontSize: { xs: '0.92rem', md: '1rem' }, lineHeight: 1.75 }}>
+                  <Typography sx={{ maxWidth: 700, color: 'text.secondary', fontSize: { xs: '0.95rem', md: '1rem' }, lineHeight: 1.7 }}>
                     {t.heroBody}
                   </Typography>
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
                     <Button variant="contained" color="primary" onClick={() => setTab('chat')}>
-                      Explorar demo
+                      Explore demo
                     </Button>
                     <Button variant="outlined" color="secondary" onClick={() => setTab('audio')}>
-                      Ver fluxo multimodal
+                      Multimodal workflow
                     </Button>
                   </Stack>
                 </Stack>
               </Grid>
-              <Grid size={{ xs: 12, lg: 4 }}>
-                <Paper
-                  variant="outlined"
-                  sx={{
-                    p: 2,
-                    borderRadius: 5,
-                    background: 'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,245,238,0.94))',
-                  }}
-                >
-                  <Stack spacing={1.25}>
-                    <Typography variant="overline" color="primary">
-                      Snapshot
-                    </Typography>
-                    {portfolioHighlights.map((item) => (
-                      <Stack key={item.label} direction="row" justifyContent="space-between" spacing={2}>
-                        <Typography variant="body2" color="text.secondary">
-                          {item.label}
-                        </Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, textAlign: 'right' }}>
-                          {item.value}
-                        </Typography>
-                      </Stack>
+              <Grid size={{ xs: 12, lg: 4.5 }}>
+                <Stack spacing={1.25}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      ...HERO_COMPACT_CARD_SX,
+                    }}
+                  >
+                    <Stack spacing={0.75}>
+                      <Typography variant="overline" color="primary">
+                        {t.runtimeMode}
+                      </Typography>
+                      <Typography sx={{ fontWeight: 700, lineHeight: 1.3, fontSize: '0.95rem' }}>
+                        {runtimeMode === 'browser' ? t.browserMode : t.runtimeUnavailable}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                        {runtimeMode === 'browser' ? t.remoteConfigured : t.browserUnavailableCta}
+                      </Typography>
+                    </Stack>
+                  </Paper>
+
+                  <Grid container spacing={1.25}>
+                    {portfolioHighlights.slice(0, 3).map((item) => (
+                      <Grid key={item.label} size={{ xs: 12 }}>
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            ...HERO_COMPACT_CARD_SX,
+                          }}
+                        >
+                          <Stack direction="row" justifyContent="space-between" spacing={2} alignItems="center">
+                            <Typography variant="overline" color="primary">
+                              {item.label}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 700,
+                                lineHeight: 1.35,
+                                fontSize: '0.82rem',
+                                textAlign: 'right',
+                              }}
+                            >
+                              {item.value}
+                            </Typography>
+                          </Stack>
+                        </Paper>
+                      </Grid>
                     ))}
-                  </Stack>
-                </Paper>
+                  </Grid>
+                </Stack>
               </Grid>
             </Grid>
           </Paper>
 
-          <Alert severity={getStatusTone(status.kind)} variant="filled">
+          <Alert
+            severity={getStatusTone(status.kind)}
+            variant="filled"
+            sx={{
+              borderRadius: 1,
+              boxShadow: '0 10px 24px rgba(0,0,0,0.08)',
+              '& .MuiAlert-message': {
+                fontWeight: 600,
+              },
+            }}
+          >
             <strong>{status.kind.toUpperCase()}</strong>
             {' - '}
             {status.message}
@@ -1029,9 +1341,10 @@ export default function App() {
             <Paper
               elevation={0}
               sx={{
-                p: 2.25,
+                p: 2,
                 border: '1px solid rgba(47,34,24,0.08)',
-                background: 'rgba(255, 249, 243, 0.88)',
+                background: 'rgba(255, 250, 246, 0.92)',
+                boxShadow: '0 12px 26px rgba(76, 48, 24, 0.06)',
               }}
             >
               <Stack spacing={2}>
@@ -1041,14 +1354,20 @@ export default function App() {
                 <Grid container spacing={1.5}>
                   {diagnosticSections.map((section) => (
                     <Grid key={section.title} size={{ xs: 12, md: 6, xl: 3 }}>
-                      <Card variant="outlined" sx={{ height: '100%', backgroundColor: 'rgba(255,255,255,0.62)' }}>
-                        <CardContent sx={{ pb: '16px !important' }}>
+                      <Card
+                        variant="outlined"
+                        sx={{
+                          height: '100%',
+                          ...BALLOON_SURFACE_SX,
+                        }}
+                      >
+                        <CardContent sx={{ p: 2, pb: '16px !important' }}>
                           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 700 }}>
                             {section.title}
                           </Typography>
                           <Stack spacing={0.75}>
                             {section.items.map((item) => (
-                              <Typography key={item} variant="body2" color="text.secondary">
+                              <Typography key={item} variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                                 {'- '}
                                 {item}
                               </Typography>
@@ -1059,11 +1378,18 @@ export default function App() {
                     </Grid>
                   ))}
                 </Grid>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25} alignItems={{ xs: 'stretch', md: 'center' }}>
+                <Stack
+                  direction={{ xs: 'column', lg: 'row' }}
+                  spacing={1}
+                  alignItems={{ xs: 'stretch', lg: 'center' }}
+                  useFlexGap
+                  sx={{ flexWrap: 'wrap' }}
+                >
                   <Button
                     variant="outlined"
                     size="small"
                     onClick={() => copyText('chrome://flags/#optimization-guide-on-device-model')}
+                    sx={{ justifyContent: 'flex-start' }}
                   >
                     chrome://flags/#optimization-guide-on-device-model
                   </Button>
@@ -1071,6 +1397,7 @@ export default function App() {
                     variant="outlined"
                     size="small"
                     onClick={() => copyText('chrome://flags/#prompt-api-for-gemini-nano-multimodal-input')}
+                    sx={{ justifyContent: 'flex-start' }}
                   >
                     chrome://flags/#prompt-api-for-gemini-nano-multimodal-input
                   </Button>
@@ -1078,13 +1405,14 @@ export default function App() {
                     variant="outlined"
                     size="small"
                     onClick={() => copyText('chrome://on-device-internals')}
+                    sx={{ justifyContent: 'flex-start' }}
                   >
                     chrome://on-device-internals
                   </Button>
                 </Stack>
                 {copiedLink && (
                   <Typography variant="body2" color="secondary.main">
-                    Copiado: {copiedLink}
+                    {getErrorMessage('copied', uiLanguage)} {copiedLink}
                   </Typography>
                 )}
                 <Typography variant="body2" color="text.secondary">
@@ -1111,14 +1439,15 @@ export default function App() {
                     <Paper
                       elevation={0}
                       sx={{
-                        p: 2,
-                        border: '1px solid rgba(47,34,24,0.08)',
-                        background: 'rgba(255, 250, 245, 0.84)',
-                        boxShadow: '0 14px 30px rgba(76, 48, 24, 0.05)',
+                        p: 1.6,
+                        ...BALLOON_SURFACE_SX,
+                        boxShadow: '0 10px 22px rgba(76, 48, 24, 0.05)',
                         height: '100%',
+                        display: 'flex',
+                        alignItems: 'flex-start',
                       }}
                     >
-                      <Typography variant="body2" sx={{ fontSize: '0.92rem', color: 'text.secondary' }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.92rem', color: 'text.secondary', lineHeight: 1.55 }}>
                         {item}
                       </Typography>
                     </Paper>
@@ -1134,7 +1463,8 @@ export default function App() {
                   sx={{
                     p: 2.5,
                     border: '1px solid rgba(47,34,24,0.08)',
-                    boxShadow: '0 18px 40px rgba(76, 48, 24, 0.08)',
+                    boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
+                    background: 'rgba(255, 250, 244, 0.9)',
                   }}
                 >
                   <Stack component="form" spacing={3} onSubmit={handleSubmit}>
@@ -1227,7 +1557,7 @@ export default function App() {
                       </Grid>
                     </Grid>
 
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.62)' }}>
+                    <Paper variant="outlined" sx={{ p: 2, ...BALLOON_SURFACE_SX }}>
                       <Stack spacing={1.5}>
                         <Stack direction="row" justifyContent="space-between">
                           <Typography fontWeight={700}>{t.temperature}</Typography>
@@ -1244,7 +1574,7 @@ export default function App() {
                       </Stack>
                     </Paper>
 
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.62)' }}>
+                    <Paper variant="outlined" sx={{ p: 2, ...BALLOON_SURFACE_SX }}>
                       <Stack spacing={1.5}>
                         <Stack direction="row" justifyContent="space-between">
                           <Typography fontWeight={700}>{t.topK}</Typography>
@@ -1262,17 +1592,57 @@ export default function App() {
                       </Stack>
                     </Paper>
 
-                    <TextField
-                      label={t.prompt}
-                      multiline
-                      minRows={7}
-                      value={prompt}
-                      onChange={(event) => setPrompt(event.target.value)}
-                      placeholder={t.promptPlaceholder}
-                      inputProps={{
-                        'aria-label': t.prompt,
+                    <Box
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        setIsPromptDragOver(true);
                       }}
-                    />
+                      onDragLeave={() => setIsPromptDragOver(false)}
+                      onDrop={handlePromptDrop}
+                      sx={{
+                        ...BALLOON_SURFACE_SX,
+                        p: 2,
+                        borderRadius: 0.5,
+                        borderColor: isPromptDragOver ? 'secondary.main' : 'rgba(47,34,24,0.12)',
+                        background: isPromptDragOver
+                          ? 'linear-gradient(180deg, rgba(222,239,245,0.9), rgba(255,246,238,0.92))'
+                          : BALLOON_SURFACE_SX.background,
+                        transition: 'all 160ms ease',
+                      }}
+                    >
+                      <Typography variant="overline" color="primary" sx={{ display: 'block', mb: 1 }}>
+                        {t.prompt}
+                      </Typography>
+                      <TextField
+                        multiline
+                        minRows={5}
+                        fullWidth
+                        value={prompt}
+                        onChange={(event) => setPrompt(event.target.value)}
+                        placeholder={t.promptPlaceholder}
+                        variant="standard"
+                        InputProps={{
+                          disableUnderline: true,
+                        }}
+                        sx={{
+                          '& .MuiInputBase-root': {
+                            alignItems: 'flex-start',
+                          },
+                          '& .MuiInputBase-input': {
+                            p: 0,
+                            fontSize: '1rem',
+                            lineHeight: 1.6,
+                          },
+                        }}
+                        inputProps={{
+                          'aria-label': t.prompt,
+                        }}
+                      />
+                      <Divider sx={{ my: 1.5, opacity: 0.6 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {t.dropPrompt}
+                      </Typography>
+                    </Box>
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                       <Button
@@ -1306,11 +1676,11 @@ export default function App() {
                           variant="outlined"
                           startIcon={<UploadFileRounded />}
                         >
-                          {audioFile ? `Audio: ${audioFile.name}` : t.uploadAudio}
+                          {audioFile ? `${t.fileLabel}: ${audioFile.name}` : t.uploadFile}
                           <input
                             hidden
                             type="file"
-                            accept="audio/*"
+                            accept="*"
                             onChange={(event) => setAudioFile(event.target.files?.[0] ?? null)}
                           />
                         </Button>
@@ -1325,11 +1695,11 @@ export default function App() {
                           variant="outlined"
                           startIcon={<UploadFileRounded />}
                         >
-                          {imageFile ? `Imagem: ${imageFile.name}` : t.uploadImage}
+                          {imageFile ? `${t.fileLabel}: ${imageFile.name}` : t.uploadFile}
                           <input
                             hidden
                             type="file"
-                            accept="image/*"
+                            accept="*"
                             onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
                           />
                         </Button>
@@ -1352,7 +1722,7 @@ export default function App() {
                         type="button"
                         variant="text"
                         color="secondary"
-                        onClick={() => setOutput('A resposta vai aparecer aqui.')}
+                        onClick={() => setOutput(t.responsePlaceholder)}
                       >
                         {t.clearOutput}
                       </Button>
@@ -1366,21 +1736,18 @@ export default function App() {
                     p: 2.5,
                     border: '1px solid rgba(47,34,24,0.08)',
                     backgroundColor: 'rgba(255, 249, 243, 0.82)',
+                    boxShadow: '0 10px 24px rgba(76, 48, 24, 0.05)',
                   }}
                 >
                   <Typography variant="overline" color="primary">
                     {t.practicalNotes}
                   </Typography>
                   <Stack spacing={1.2} sx={{ mt: 1.5 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      O suporte oficial de idioma do texto na Prompt API pode nao incluir portugues.
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      O ditado do microfone usa Web Speech API quando o navegador expoe `SpeechRecognition`.
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Para audio e imagem, o modelo recebe o arquivo junto com o prompt e responde em texto.
-                    </Typography>
+                    {t.practicalNotesItems.map((item) => (
+                      <Typography key={item} variant="body2" color="text.secondary">
+                        {item}
+                      </Typography>
+                    ))}
                   </Stack>
                 </Paper>
               </Stack>
@@ -1396,7 +1763,7 @@ export default function App() {
                     border: '1px solid rgba(47,34,24,0.08)',
                     background:
                       'linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,248,240,0.96))',
-                    boxShadow: '0 18px 40px rgba(76, 48, 24, 0.08)',
+                    boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
                   }}
                 >
                   <Stack spacing={2}>
@@ -1429,7 +1796,8 @@ export default function App() {
                   sx={{
                     p: 2.5,
                     border: '1px solid rgba(47,34,24,0.08)',
-                    boxShadow: '0 18px 40px rgba(76, 48, 24, 0.08)',
+                    boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
+                    background: 'rgba(255, 250, 244, 0.9)',
                   }}
                 >
                   <Typography variant="overline" color="primary">
@@ -1442,7 +1810,7 @@ export default function App() {
                           variant="outlined"
                           sx={{
                             height: '100%',
-                            background: 'linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,246,238,0.92))',
+                            ...BALLOON_SURFACE_SX,
                           }}
                         >
                           <CardContent>
@@ -1502,16 +1870,20 @@ export default function App() {
             <Paper
               elevation={0}
               sx={{
-                position: 'sticky',
-                bottom: 12,
-                p: 2.5,
+                position: 'fixed',
+                right: { xs: 12, md: 20 },
+                bottom: { xs: 12, md: 20 },
+                width: { xs: 'calc(100vw - 24px)', sm: 360, md: 380 },
+                maxWidth: '100%',
+                p: 2.25,
                 border: '1px solid rgba(47,34,24,0.08)',
                 background: 'rgba(255, 250, 246, 0.96)',
-                boxShadow: '0 18px 40px rgba(76, 48, 24, 0.08)',
-                zIndex: 20,
+                boxShadow: '0 20px 44px rgba(76, 48, 24, 0.14)',
+                zIndex: 30,
+                borderRadius: 0.5,
               }}
             >
-              <Stack spacing={2}>
+              <Stack spacing={1.75}>
                 <Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                     {t.cookieTitle}
@@ -1521,7 +1893,7 @@ export default function App() {
                   </Typography>
                 </Box>
 
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+                <Stack direction="column" spacing={1.25}>
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <Switch checked disabled inputProps={{ 'aria-label': t.cookieNecessary }} />
                     <Typography variant="body2">{t.cookieNecessary}</Typography>

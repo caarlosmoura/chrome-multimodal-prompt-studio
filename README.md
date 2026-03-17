@@ -1,152 +1,153 @@
 # Chrome Multimodal Prompt Studio
 
-Aplicacao em React com Material UI para explorar uma LLM executada no navegador por meio da Prompt API do Chrome, com entradas multimodais de texto, audio e imagem.
+React + Material UI portfolio project that showcases a multimodal LLM running directly in the browser through the Chrome Prompt API, with text, audio, and image inputs.
 
-Feito por Carlos Moura Ramos. Copyright © 2026 Carlos Moura Ramos.
+Made by Carlos Moura Ramos. Copyright © 2026 Carlos Moura Ramos.
 
-Versao atual: `1.0.0`
+Current version: `1.0.0`
 
-## O que este projeto demonstra
+## What this project demonstrates
 
-Este projeto mostra como construir uma interface web que conversa com uma LLM on-device, ou seja, um modelo de linguagem executado localmente no navegador quando o Chrome expoe a Prompt API.
+This project shows how to build a web interface that talks to an on-device LLM, meaning a language model executed locally in the browser when Chrome exposes the Prompt API.
 
-Na pratica, isso significa que a aplicacao:
+In practice, that means the application:
 
-- usa uma LLM acessivel diretamente no navegador
-- combina diferentes modalidades de entrada, como texto, audio e imagem
-- permite controlar parametros de geracao como `temperature` e `topK`
-- processa casos de uso multimodais sem depender de uma API remota tradicional no fluxo principal
+- uses an LLM directly from the browser
+- combines multiple input modalities such as text, audio, and image
+- allows generation controls such as `temperature` and `topK`
+- supports multimodal workflows without depending on a traditional remote inference API in the main flow
 
-O foco aqui e demonstrar como uma web app moderna pode usar recursos nativos de IA do navegador para criar experiencias multimodais com cara de produto.
+The goal is to demonstrate how a modern web app can use native browser AI capabilities to create product-oriented multimodal experiences.
 
-## O que e uma Web API multimodal
+## What is a multimodal Web API
 
-Uma Web API multimodal e uma interface exposta pelo navegador que permite enviar e combinar diferentes tipos de entrada na mesma interacao, como texto, audio e imagem, recebendo uma saida estruturada ou textual a partir desse conjunto de sinais.
+A multimodal Web API is a browser-exposed interface that allows an application to send and combine different kinds of input in the same interaction, such as text, audio, and image, and receive a textual or structured response from that combined context.
 
-Neste projeto, a Web API multimodal usada e a Prompt API do Chrome, configurada para trabalhar com:
+In this project, the multimodal Web API is Chrome Prompt API, configured to work with:
 
-- texto
+- text
 - audio
-- imagem
+- image
 
-Isso permite cenarios como:
+That enables scenarios such as:
 
-- transcrever um audio e extrair itens de acao
-- analisar uma imagem e capturar o texto visivel
-- combinar um prompt textual com uma imagem ou audio para orientar a resposta do modelo
+- transcribing an audio recording and extracting action items
+- analyzing an image and extracting visible text
+- combining a text prompt with an image or audio input to guide the model response
 
-## LLM no navegador
+## LLM in the browser
 
-Neste projeto, a LLM nao e consumida como um endpoint HTTP externo comum. Em vez disso, a aplicacao usa a Prompt API do Chrome para acessar capacidades de IA disponibilizadas pelo proprio navegador.
+This project does not use the LLM as a standard external HTTP endpoint. Instead, the application relies on Chrome Prompt API to access AI capabilities exposed by the browser itself.
 
-Esse modelo de execucao e relevante porque:
+This execution model matters because it:
 
-- reduz a dependencia de chamadas diretas para um backend de inferencia em cenarios suportados
-- permite experimentar IA on-device dentro da propria interface web
-- ajuda a prototipar fluxos multimodais com latencia local e integracao nativa com APIs do navegador
+- reduces reliance on direct backend inference calls in supported scenarios
+- enables on-device AI experimentation directly inside the web UI
+- helps prototype multimodal flows with local latency and native browser integration
 
-Como a Prompt API ainda e experimental, o comportamento exato, os idiomas suportados e os formatos aceitos podem variar conforme a versao do Chrome e as flags habilitadas.
+Because Prompt API is still experimental, exact behavior, supported languages, and accepted formats may vary depending on the Chrome version and enabled flags.
 
-## O que o projeto faz
+## Features
 
-- Permite ajustar `temperature` e `topK`.
-- Permite escolher o idioma da interface para melhorar a navegacao e a demonstracao do produto.
-- Executa tarefas de chat, transcricao de audio e extracao de texto e informacoes de imagens.
-- Aceita upload de arquivos de audio e imagem.
-- Permite enviar arquivos de audio e imagem por drag and drop.
-- Permite gravar audio do microfone para enviar como entrada multimodal.
-- Usa o microfone para ditado do prompt com Web Speech API, quando o navegador expoe `SpeechRecognition`.
-- Exibe o resultado em streaming e mostra o progresso de preparo do modelo local quando disponivel.
-- Inclui melhorias de acessibilidade com rotulos claros, ajuda textual e atributos para leitores de tela.
-- Inclui banner de cookies para preferencias locais e futuras analytics.
-- Inclui uma area com ideias de evolucao do produto.
+- Adjustable `temperature` and `topK`
+- Interface language selector for product demos and usability
+- Chat, audio transcription, and image text extraction flows
+- Audio and image upload support
+- Drag and drop for audio and image files
+- Microphone recording for multimodal audio input
+- Prompt dictation through Web Speech API when `SpeechRecognition` is available
+- Streaming output rendering
+- Download/preparation status feedback for the local model
+- Accessibility improvements with labels, helper text, keyboard-friendly controls, and screen-reader-oriented attributes
+- Cookie banner for local preferences and future analytics readiness
+- Portfolio-oriented presentation with authorship, copyright, and visible versioning
 
 ## Stack
 
 - React
 - Vite
 - Material UI
-- Chrome Prompt API para acesso a LLM no navegador
+- Chrome Prompt API for browser-based LLM access
 - Web Speech API
 - MediaRecorder API
 
-## Como executar
+## Run locally
 
 ```bash
 npm install
 npm start
 ```
 
-ou
+or:
 
 ```bash
 npm run dev
 ```
 
-Abra a URL local exibida pelo Vite no Google Chrome ou Chrome Canary.
+Open the local URL shown by Vite in Google Chrome or Chrome Canary.
 
-## Build de producao
+## Production build
 
 ```bash
 npm run build
 ```
 
-Os arquivos finais serao gerados em `dist/`.
+The production files will be generated in `dist/`.
 
-## Versionamento
+## Versioning
 
-O projeto usa a versao definida em `package.json`, que tambem e exibida na interface do portfolio.
+The project version is defined in `package.json` and is also displayed inside the portfolio UI.
 
-Antes de publicar uma nova entrega, atualize o campo `version` em `package.json`.
+Before publishing a new release, update the `version` field in `package.json`.
 
-## Deploy por FTP
+## FTP deployment
 
-O projeto inclui um script de deploy por FTP pensado para hospedagem tradicional.
+The project includes an FTP deployment script designed for traditional hosting environments.
 
 ```bash
 FTP_HOST=ftp.cmrdev.lat \
-FTP_USER=seu_usuario \
-FTP_PASSWORD=sua_senha \
+FTP_USER=your_user \
+FTP_PASSWORD=your_password \
 FTP_REMOTE_DIR=/ \
 npm run deploy:ftp
 ```
 
-Se o servidor exigir FTPS:
+If the server requires FTPS:
 
 ```bash
 FTP_SECURE=true
 ```
 
-## Interface e acessibilidade
+## Interface and accessibility
 
-- Interface desenvolvida com Material UI.
-- Seletor de idioma da interface com opcoes para portugues, ingles e espanhol.
-- Campos principais com `label`, `helper text` e atributos de acessibilidade para melhorar a navegacao por teclado e leitor de tela.
-- Estrutura pensada para demonstracao de uma LLM multimodal em ambiente web com foco em clareza visual.
-- Rodape de portfolio com autoria e copyright.
+- Built with Material UI
+- Interface language selector with Portuguese, English, and Spanish options
+- Main fields include labels, helper text, and accessibility attributes for keyboard navigation and screen readers
+- Drag and drop zones can also be activated by click or keyboard
+- Portfolio footer includes authorship, copyright, and version information
 
-## Requisitos do navegador
+## Browser requirements
 
-- Chrome com suporte as APIs de IA on-device.
-- Prompt API habilitada nas flags experimentais do Chrome.
-- Permissao de microfone para usar ditado e gravacao.
+- Chrome or Chrome Canary with on-device AI support
+- Prompt API enabled in experimental Chrome flags
+- Microphone permission for dictation and recording flows
 
-Consulte a documentacao oficial para verificar o estado atual das APIs:
+Check the official documentation for the current API state:
 
 - https://developer.chrome.com/docs/ai/prompt-api
 
-## Limitacoes importantes
+## Important limitations
 
-- O suporte oficial de idiomas para texto na Prompt API pode nao incluir `pt-BR`.
-- O reconhecimento de voz depende da disponibilidade de `SpeechRecognition` no navegador.
-- A qualidade de OCR, transcricao e extracao depende do modelo local e das capacidades expostas pela versao atual do Chrome.
-- O idioma da interface pode ser alterado livremente, mas os idiomas aceitos pelo modelo dependem das capacidades reais da Prompt API no Chrome em uso.
-- O banner de cookies atual cobre preferencias locais e deixa a base pronta para futura instrumentacao de analytics.
+- Official Prompt API text language support may not include `pt-BR`
+- Speech recognition depends on `SpeechRecognition` availability in the browser
+- OCR, transcription, and extraction quality depend on the local model and the capabilities exposed by the current Chrome version
+- The UI language can be changed freely, but the actual model languages still depend on the Prompt API capabilities available in the running browser
+- The current cookie banner covers local preferences and keeps the project ready for future analytics instrumentation
 
-## Ideias de evolucao
+## Future ideas
 
-- Exportar JSON estruturado com entidades, datas, itens de acao e resumo.
-- Adicionar templates por caso de uso: reuniao, recibo, contrato, print de erro, checklist de campo.
-- Persistir historico local com IndexedDB.
-- Integrar traducao de entrada e saida quando a Prompt API e o idioma desejado nao coincidirem.
-- Criar modo de comparacao de respostas alterando `temperature` e `topK`.
+- Export structured JSON with entities, dates, action items, and summaries
+- Add templates for use cases such as meetings, receipts, contracts, error screenshots, and field checklists
+- Persist local history with IndexedDB
+- Add translation between input and output when Prompt API language support does not match the desired language
+- Add response comparison mode using different `temperature` and `topK` values
