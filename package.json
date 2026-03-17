@@ -1,0 +1,34 @@
+{
+  "name": "chrome-multimodal-prompt-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Studio multimodal com Material UI para explorar a Prompt API do Chrome.",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy:ftp": "node scripts/deploy-ftp.mjs"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.2",
+    "basic-ftp": "^5.0.5",
+    "vite": "^7.1.5"
+  },
+  "keywords": [
+    "chrome",
+    "prompt-api",
+    "multimodal",
+    "material-ui",
+    "gemini-nano"
+  ],
+  "license": "MIT"
+}
