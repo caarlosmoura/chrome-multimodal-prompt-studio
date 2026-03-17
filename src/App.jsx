@@ -16,7 +16,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  Slider,
   Stack,
   Switch,
   Tab,
@@ -77,7 +76,7 @@ const ideaCards = [
 
 const portfolioHighlights = [
   { label: 'Inputs', value: 'Text, audio, image' },
-  { label: 'Controls', value: 'Temperature + Top K' },
+  { label: 'Controls', value: 'Prompt + file drop' },
   { label: 'UX', value: 'Accessible Material UI' },
   { label: 'Runtime', value: 'Browser-based LLM' },
 ];
@@ -120,8 +119,8 @@ const uiCopy = {
     interfaceLanguageHelp: 'Altera os textos visiveis da interface para facilitar a navegacao.',
     modelLanguage: 'Idioma do modelo',
     modelLanguageHelp: 'Define o idioma esperado para entrada e saida textual da sessao.',
-    microphoneLanguage: 'Idioma do microfone',
-    microphoneLanguageHelp: 'Define o idioma usado pelo reconhecimento de voz no navegador.',
+    microphoneLanguage: 'Idioma do ditado',
+    microphoneLanguageHelp: 'Define o idioma usado pelo reconhecimento de voz para ditar o prompt.',
     temperature: 'Temperature',
     topK: 'Top K',
     prompt: 'Prompt',
@@ -141,6 +140,8 @@ const uiCopy = {
     dropFile: 'Arraste e solte um arquivo aqui ou clique para selecionar.',
     dropPrompt: 'Voce tambem pode arrastar e soltar um arquivo diretamente na area do prompt.',
     selectedFile: 'Arquivo selecionado',
+    prepareModel: 'Preparar modelo local',
+    preparingModelAction: 'Preparando modelo...',
     runTask: 'Executar tarefa',
     stop: 'Interromper',
     clearOutput: 'Limpar output',
@@ -171,15 +172,15 @@ const uiCopy = {
     versionLabel: 'Versao',
     runtimeMode: 'Modo ativo',
     browserMode: 'Prompt API local',
-    remoteMode: 'Fallback remoto',
-    runtimeUnavailable: 'Modo demonstracao',
-    remoteConfigured: 'Endpoint remoto configurado para preservar temperature e topK quando o modelo local nao estiver disponivel.',
+    remoteMode: 'Preparacao local',
+    runtimeUnavailable: 'Download do modelo',
+    remoteConfigured: 'A sessao usa a Prompt API local do Chrome quando o modelo ja esta pronto no navegador.',
     portfolioDemoTitle: 'Demo mode',
     portfolioDemoBody:
       'This public version keeps the complete interface visible, but real execution depends on a compatible Chrome environment with on-device AI support.',
     portfolioDemoHint:
       'Temperature and Top K are preserved in the UI, but generation is disabled when the browser does not provide a compatible local model.',
-    browserUnavailableCta: 'Execution requires a compatible device or a future backend fallback.',
+    browserUnavailableCta: 'O navegador ainda precisa preparar ou habilitar o modelo local antes da execucao.',
   },
   'en-US': {
     heroTag: 'Chrome Prompt API + Multimodal',
@@ -192,8 +193,8 @@ const uiCopy = {
     interfaceLanguageHelp: 'Changes the visible UI text to improve navigation and readability.',
     modelLanguage: 'Model language',
     modelLanguageHelp: 'Defines the expected text input and output language for the session.',
-    microphoneLanguage: 'Microphone language',
-    microphoneLanguageHelp: 'Defines the language used by browser speech recognition.',
+    microphoneLanguage: 'Dictation language',
+    microphoneLanguageHelp: 'Sets the speech recognition language used to dictate the prompt.',
     temperature: 'Temperature',
     topK: 'Top K',
     prompt: 'Prompt',
@@ -213,6 +214,8 @@ const uiCopy = {
     dropFile: 'Drag and drop any file here or click to select.',
     dropPrompt: 'You can also drag and drop a file directly onto the prompt area.',
     selectedFile: 'Selected file',
+    prepareModel: 'Prepare local model',
+    preparingModelAction: 'Preparing model...',
     runTask: 'Run task',
     stop: 'Stop',
     clearOutput: 'Clear output',
@@ -243,15 +246,15 @@ const uiCopy = {
     versionLabel: 'Version',
     runtimeMode: 'Active mode',
     browserMode: 'Local Prompt API',
-    remoteMode: 'Remote fallback',
-    runtimeUnavailable: 'Demo mode',
-    remoteConfigured: 'A remote endpoint is configured to preserve temperature and topK when the local model is unavailable.',
+    remoteMode: 'Local preparation',
+    runtimeUnavailable: 'Model download',
+    remoteConfigured: 'The session uses Chrome local Prompt API when the model is already prepared in the browser.',
     portfolioDemoTitle: 'Demo mode',
     portfolioDemoBody:
       'This public version keeps the full interface visible, but real execution depends on a compatible Chrome environment with on-device AI support.',
     portfolioDemoHint:
       'Temperature and Top K remain available in the UI, but generation is disabled when the browser does not expose a compatible local model.',
-    browserUnavailableCta: 'Execution requires a compatible device or a future backend fallback.',
+    browserUnavailableCta: 'Chrome still needs to prepare or enable the local model before execution.',
   },
   'es-ES': {
     heroTag: 'Chrome Prompt API + Multimodal',
@@ -264,8 +267,8 @@ const uiCopy = {
     interfaceLanguageHelp: 'Cambia los textos visibles de la interfaz para mejorar la navegacion.',
     modelLanguage: 'Idioma del modelo',
     modelLanguageHelp: 'Define el idioma esperado para la entrada y salida de texto de la sesion.',
-    microphoneLanguage: 'Idioma del microfono',
-    microphoneLanguageHelp: 'Define el idioma usado por el reconocimiento de voz del navegador.',
+    microphoneLanguage: 'Idioma del dictado',
+    microphoneLanguageHelp: 'Define el idioma del reconocimiento de voz usado para dictar el prompt.',
     temperature: 'Temperature',
     topK: 'Top K',
     prompt: 'Prompt',
@@ -285,6 +288,8 @@ const uiCopy = {
     dropFile: 'Arrastra y suelta cualquier archivo aqui o haz clic para seleccionarlo.',
     dropPrompt: 'Tambien puedes arrastrar y soltar un archivo directamente sobre el area del prompt.',
     selectedFile: 'Archivo seleccionado',
+    prepareModel: 'Preparar modelo local',
+    preparingModelAction: 'Preparando modelo...',
     runTask: 'Ejecutar tarea',
     stop: 'Detener',
     clearOutput: 'Limpiar salida',
@@ -315,21 +320,17 @@ const uiCopy = {
     versionLabel: 'Version',
     runtimeMode: 'Modo activo',
     browserMode: 'Prompt API local',
-    remoteMode: 'Fallback remoto',
-    runtimeUnavailable: 'Modo demo',
-    remoteConfigured: 'Hay un endpoint remoto configurado para conservar temperature y topK cuando el modelo local no esta disponible.',
+    remoteMode: 'Preparacion local',
+    runtimeUnavailable: 'Descarga del modelo',
+    remoteConfigured: 'La sesion usa la Prompt API local de Chrome cuando el modelo ya esta preparado en el navegador.',
     portfolioDemoTitle: 'Modo demo',
     portfolioDemoBody:
       'Esta version publica mantiene la interfaz completa visible, pero la ejecucion real depende de un entorno Chrome compatible con IA on-device.',
     portfolioDemoHint:
       'Temperature y Top K siguen visibles en la interfaz, pero la generacion se desactiva cuando el navegador no expone un modelo local compatible.',
-    browserUnavailableCta: 'La ejecucion requiere un dispositivo compatible o un futuro backend fallback.',
+    browserUnavailableCta: 'Chrome todavia necesita preparar o habilitar el modelo local antes de la ejecucion.',
   },
 };
-
-function normalizeTopK(value, maxTopK) {
-  return Math.min(maxTopK, Math.max(1, Number.parseInt(value, 10) || 1));
-}
 
 function toPercent(progress) {
   if (typeof progress.total === 'number' && progress.total > 0) {
@@ -399,6 +400,18 @@ function getStatusMessage(kind, uiLanguage) {
   };
 
   return messages[uiLanguage]?.[kind] || messages['en-US']?.[kind] || kind;
+}
+
+function resolveAvailabilityKind(availability) {
+  if (availability === 'available') {
+    return 'ready';
+  }
+
+  if (availability === 'unavailable') {
+    return 'downloadable';
+  }
+
+  return availability;
 }
 
 function getUnavailableDiagnostics(uiLanguage) {
@@ -661,17 +674,15 @@ export default function App() {
   const imageInputRef = useRef(null);
 
   const [tab, setTab] = useState('chat');
-  const [params, setParams] = useState(null);
   const [uiLanguage, setUiLanguage] = useState('en-US');
   const [modelLanguage, setModelLanguage] = useState('en');
   const [speechLanguage, setSpeechLanguage] = useState('pt-BR');
-  const [temperature, setTemperature] = useState(1);
-  const [topK, setTopK] = useState(3);
   const [prompt, setPrompt] = useState('');
   const [output, setOutput] = useState(uiCopy['en-US'].responsePlaceholder);
   const [status, setStatus] = useState({ kind: 'checking', message: getStatusMessage('checking', 'en-US') });
   const [fatalError, setFatalError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPreparingModel, setIsPreparingModel] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
@@ -708,22 +719,13 @@ export default function App() {
         const recognitionCtor = getSpeechRecognition();
         setSpeechSupported(Boolean(recognitionCtor));
 
-        const modelParams = await LanguageModel.params();
-        if (!active) {
-          return;
-        }
-
-        setParams(modelParams);
-        setTemperature(modelParams.defaultTemperature);
-        setTopK(normalizeTopK(modelParams.defaultTopK, modelParams.maxTopK));
-
         const availability = await LanguageModel.availability(availabilityOptions);
         if (!active) {
           return;
         }
 
-        const resolvedKind = availability === 'available' ? 'ready' : availability;
-        setRuntimeMode(availability === 'unavailable' ? 'demo' : 'browser');
+        const resolvedKind = resolveAvailabilityKind(availability);
+        setRuntimeMode(availability === 'available' ? 'browser' : 'download');
         setStatus({
           kind: resolvedKind,
           message: getStatusMessage(resolvedKind, uiLanguage),
@@ -1085,12 +1087,54 @@ export default function App() {
     });
   }
 
+  async function prepareLocalModel() {
+    try {
+      setIsPreparingModel(true);
+      setRuntimeMode('download');
+      setStatus({
+        kind: 'downloadable',
+        message: getStatusMessage('downloadable', uiLanguage),
+      });
+      setOutput(getErrorMessage('preparingModel', uiLanguage));
+
+      sessionRef.current?.destroy?.();
+
+      sessionRef.current = await LanguageModel.create({
+        expectedInputs: [{ type: 'text', languages: [modelLanguage] }],
+        expectedOutputs: [{ type: 'text', languages: [modelLanguage] }],
+        monitor(monitor) {
+          monitor.addEventListener('downloadprogress', (progress) => {
+            const percent = toPercent(progress);
+            setStatus({
+              kind: 'downloading',
+              message: `Preparing local model: ${percent}%`,
+            });
+          });
+        },
+      });
+
+      setRuntimeMode('browser');
+      setStatus({
+        kind: 'ready',
+        message: getStatusMessage('ready', uiLanguage),
+      });
+      setDiagnostics([]);
+      sessionRef.current?.destroy?.();
+      sessionRef.current = null;
+      setOutput(t.responsePlaceholder);
+    } catch (error) {
+      setStatus({
+        kind: 'attention',
+        message: error.message,
+      });
+      setOutput(`${t.errorPrefix} ${error.message}`);
+    } finally {
+      setIsPreparingModel(false);
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
-
-    if (!params) {
-      return;
-    }
 
     if (isGenerating) {
       abortControllerRef.current?.abort();
@@ -1104,7 +1148,7 @@ export default function App() {
 
     try {
       const availability = await LanguageModel.availability(availabilityOptions);
-      const resolvedKind = availability === 'available' ? 'ready' : availability;
+      const resolvedKind = resolveAvailabilityKind(availability);
 
       setStatus({
         kind: resolvedKind,
@@ -1113,8 +1157,9 @@ export default function App() {
       setDiagnostics(availability === 'unavailable' ? getUnavailableDiagnostics(uiLanguage) : []);
 
       if (availability === 'unavailable') {
-        setRuntimeMode('demo');
-        throw new Error(getErrorMessage('modelUnavailable', uiLanguage));
+        setRuntimeMode('download');
+        setOutput(getErrorMessage('preparingModel', uiLanguage));
+        return;
       }
 
       setIsGenerating(true);
@@ -1124,9 +1169,6 @@ export default function App() {
       abortControllerRef.current = new AbortController();
 
       sessionRef.current?.destroy?.();
-
-      const safeTopK = normalizeTopK(topK, params.maxTopK);
-      setTopK(safeTopK);
 
       const userContent = await buildUserContent();
 
@@ -1139,8 +1181,6 @@ export default function App() {
           { type: 'image' },
         ],
         expectedOutputs: [{ type: 'text', languages: [modelLanguage] }],
-        temperature,
-        topK: safeTopK,
         initialPrompts: [
           {
             role: 'system',
@@ -1461,7 +1501,7 @@ export default function App() {
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 2.5,
+                    p: 2.25,
                     border: '1px solid rgba(47,34,24,0.08)',
                     boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
                     background: 'rgba(255, 250, 244, 0.9)',
@@ -1548,49 +1588,14 @@ export default function App() {
                               'aria-describedby': 'speech-language-help',
                             }}
                           >
-                            <MenuItem value="pt-BR">pt-BR</MenuItem>
-                            <MenuItem value="en-US">en-US</MenuItem>
-                            <MenuItem value="es-ES">es-ES</MenuItem>
+                            <MenuItem value="pt-BR">Portuguese (Brazil)</MenuItem>
+                            <MenuItem value="en-US">English (US)</MenuItem>
+                            <MenuItem value="es-ES">Spanish (Spain)</MenuItem>
                           </Select>
                           <FormHelperText id="speech-language-help">{t.microphoneLanguageHelp}</FormHelperText>
                         </FormControl>
                       </Grid>
                     </Grid>
-
-                    <Paper variant="outlined" sx={{ p: 2, ...BALLOON_SURFACE_SX }}>
-                      <Stack spacing={1.5}>
-                        <Stack direction="row" justifyContent="space-between">
-                          <Typography fontWeight={700}>{t.temperature}</Typography>
-                          <Chip size="small" label={temperature.toFixed(1)} />
-                        </Stack>
-                        <Slider
-                          value={temperature}
-                          min={0}
-                          max={params?.maxTemperature ?? 2}
-                          step={0.1}
-                          valueLabelDisplay="auto"
-                          onChange={(_, value) => setTemperature(value)}
-                        />
-                      </Stack>
-                    </Paper>
-
-                    <Paper variant="outlined" sx={{ p: 2, ...BALLOON_SURFACE_SX }}>
-                      <Stack spacing={1.5}>
-                        <Stack direction="row" justifyContent="space-between">
-                          <Typography fontWeight={700}>{t.topK}</Typography>
-                          <Chip size="small" label={String(topK)} />
-                        </Stack>
-                        <TextField
-                          type="number"
-                          value={topK}
-                          onChange={(event) => setTopK(event.target.value)}
-                          inputProps={{
-                            min: 1,
-                            max: params?.maxTopK ?? 128,
-                          }}
-                        />
-                      </Stack>
-                    </Paper>
 
                     <Box
                       onDragOver={(event) => {
@@ -1639,7 +1644,7 @@ export default function App() {
                         }}
                       />
                       <Divider sx={{ my: 1.5, opacity: 0.6 }} />
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" sx={{ display: 'none' }}>
                         {t.dropPrompt}
                       </Typography>
                     </Box>
@@ -1707,12 +1712,24 @@ export default function App() {
                     )}
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                      {(runtimeMode === 'download' || ['downloadable', 'downloading'].includes(status.kind)) && (
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          color="secondary"
+                          onClick={prepareLocalModel}
+                          disabled={isPreparingModel || !!fatalError}
+                        >
+                          {isPreparingModel ? t.preparingModelAction : t.prepareModel}
+                        </Button>
+                      )}
+
                       <Button
                         type="submit"
                         variant="contained"
                         size="large"
                         startIcon={isGenerating ? <StopCircleRounded /> : <AutoAwesomeRounded />}
-                        disabled={!params || !!fatalError}
+                        disabled={!!fatalError || runtimeMode !== 'browser' || isPreparingModel}
                         sx={{ flex: 1, py: 1.35 }}
                       >
                         {isGenerating ? t.stop : t.runTask}
@@ -1766,7 +1783,7 @@ export default function App() {
                     boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
                   }}
                 >
-                  <Stack spacing={2}>
+                  <Stack spacing={1.25}>
                     <Box>
                       <Typography variant="overline" color="primary">
                         {t.output}
@@ -1832,11 +1849,11 @@ export default function App() {
                     background: 'linear-gradient(135deg, rgba(143,61,31,0.08), rgba(33,92,115,0.08))',
                   }}
                 >
-                  <Stack spacing={1}>
+                  <Stack spacing={2}>
                     <Typography variant="overline" color="primary">
                       Portfolio note
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                       {t.portfolioNote}
                     </Typography>
                   </Stack>
@@ -1854,8 +1871,11 @@ export default function App() {
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       {t.authorNote}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ display: 'none !important' }}>
                       {t.copyrightLabel} © {currentYear} Carlos Moura Ramos
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {t.copyrightLabel} (c) {currentYear} Carlos Moura Ramos
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {t.versionLabel} {appVersion}
