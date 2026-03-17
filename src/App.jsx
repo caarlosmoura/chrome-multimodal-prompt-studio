@@ -106,6 +106,21 @@ const HERO_COMPACT_CARD_SX = {
   px: 1.35,
 };
 
+const CONTROL_PRESETS = {
+  precise: {
+    temperature: 0.2,
+    topK: 1,
+  },
+  balanced: {
+    temperature: 0.8,
+    topK: 8,
+  },
+  creative: {
+    temperature: 1.4,
+    topK: 32,
+  },
+};
+
 function toPercent(progress) {
   if (typeof progress.total === 'number' && progress.total > 0) {
     return Math.round((progress.loaded / progress.total) * 100);
@@ -116,6 +131,10 @@ function toPercent(progress) {
 
 function getSpeechRecognition() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
+function canCaptureMicrophoneAudio() {
+  return Boolean(navigator.mediaDevices?.getUserMedia) && typeof MediaRecorder !== 'undefined';
 }
 
 function getStatusTone(kind) {
@@ -262,6 +281,16 @@ function getErrorMessage(key, uiLanguage) {
       'pt-BR': 'Microfone ativo para ditado do prompt.',
       'en-US': 'Microphone active for prompt dictation.',
       'es-ES': 'Microfono activo para dictado del prompt.',
+    },
+    microphoneCaptureActive: {
+      'pt-BR': 'Microfone ativo para capturar audio.',
+      'en-US': 'Microphone active to capture audio.',
+      'es-ES': 'Microfono activo para capturar audio.',
+    },
+    microphoneCaptured: {
+      'pt-BR': 'Audio capturado pelo microfone e anexado ao fluxo.',
+      'en-US': 'Audio captured from the microphone and attached to the flow.',
+      'es-ES': 'Audio capturado por el microfono y adjuntado al flujo.',
     },
     copyFailed: {
       'pt-BR': 'Nao foi possivel copiar automaticamente. Copie manualmente.',
@@ -436,6 +465,10 @@ function appendFiles(currentFiles, nextFiles) {
   return [...currentFiles, ...Array.from(nextFiles ?? [])];
 }
 
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
 function isTextLikeFile(file) {
   return (
     file.type.startsWith('text/') ||
@@ -468,6 +501,8 @@ export default function App() {
   const { i18n } = useTranslation();
   const sessionRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordingChunksRef = useRef([]);
   const speechRecognitionRef = useRef(null);
   const genericInputRef = useRef(null);
   const outputRef = useRef(null);
@@ -488,7 +523,9 @@ export default function App() {
   const [fatalError, setFatalError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
+  const [isCapturingAudio, setIsCapturingAudio] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [microphoneCaptureSupported, setMicrophoneCaptureSupported] = useState(false);
   const [audioFiles, setAudioFiles] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
   const [isPromptDragOver, setIsPromptDragOver] = useState(false);
@@ -510,6 +547,10 @@ export default function App() {
 
     async function boot() {
       try {
+        const recognitionCtor = getSpeechRecognition();
+        setSpeechSupported(Boolean(recognitionCtor));
+        setMicrophoneCaptureSupported(canCaptureMicrophoneAudio());
+
         if (!window.chrome) {
           throw new Error('Use Google Chrome ou Chrome Canary para testar a Prompt API.');
         }
@@ -517,9 +558,6 @@ export default function App() {
         if (!('LanguageModel' in self)) {
           throw new Error('A Prompt API nao esta ativa. Habilite as flags necessarias do Chrome.');
         }
-
-        const recognitionCtor = getSpeechRecognition();
-        setSpeechSupported(Boolean(recognitionCtor));
 
         const params = await readModelParams();
         if (params && active) {
@@ -565,6 +603,7 @@ export default function App() {
       abortControllerRef.current?.abort();
       sessionRef.current?.destroy?.();
       speechRecognitionRef.current?.stop?.();
+      mediaRecorderRef.current?.stop?.();
     };
   }, [effectiveTab, modelLanguage, t.errorPrefix, uiLanguage]);
 
@@ -618,13 +657,70 @@ export default function App() {
     }
   }, []);
 
-  function toggleDictation() {
+  async function startAudioCaptureFallback() {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream);
+
+    recordingChunksRef.current = [];
+    mediaRecorderRef.current = recorder;
+
+    recorder.addEventListener('dataavailable', (event) => {
+      if (event.data.size > 0) {
+        recordingChunksRef.current.push(event.data);
+      }
+    });
+
+    recorder.addEventListener('stop', () => {
+      const blob = new Blob(recordingChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+      const file = new File([blob], `microphone-${Date.now()}.webm`, {
+        type: blob.type || 'audio/webm',
+      });
+
+      setAudioFiles((currentFiles) => appendFiles(currentFiles, [file]));
+      setTab('audio');
+      setIsCapturingAudio(false);
+      stream.getTracks().forEach((track) => track.stop());
+      setStatus({
+        kind: 'ready',
+        message: getErrorMessage('microphoneCaptured', uiLanguage),
+      });
+    });
+
+    recorder.start();
+    setIsCapturingAudio(true);
+    setStatus({
+      kind: 'attention',
+      message: getErrorMessage('microphoneCaptureActive', uiLanguage),
+    });
+  }
+
+  function toggleMicrophone() {
     const recognitionCtor = getSpeechRecognition();
+    const startCaptureFallback = () => {
+      startAudioCaptureFallback().catch((error) => {
+        setIsCapturingAudio(false);
+        setStatus({
+          kind: 'attention',
+          message: `${t.errorPrefix} ${error.message}`,
+        });
+      });
+    };
+
     if (!recognitionCtor) {
+      if (!microphoneCaptureSupported) {
         setStatus({
           kind: 'attention',
           message: getErrorMessage('speechUnavailable', uiLanguage),
         });
+        return;
+      }
+
+      if (isCapturingAudio) {
+        mediaRecorderRef.current?.stop();
+        return;
+      }
+
+      startCaptureFallback();
       return;
     }
 
@@ -658,6 +754,12 @@ export default function App() {
 
     recognition.onerror = (event) => {
       setIsDictating(false);
+
+      if (microphoneCaptureSupported && ['not-allowed', 'service-not-allowed', 'audio-capture'].includes(event.error)) {
+        startCaptureFallback();
+        return;
+      }
+
       setStatus({
         kind: 'attention',
         message: `${t.dictationFailed} ${event.error}`,
@@ -678,7 +780,19 @@ export default function App() {
       });
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (error) {
+      if (microphoneCaptureSupported) {
+        startCaptureFallback();
+        return;
+      }
+
+      setStatus({
+        kind: 'attention',
+        message: `${t.errorPrefix} ${error.message}`,
+      });
+    }
   }
 
   async function buildUserContent() {
@@ -890,6 +1004,16 @@ export default function App() {
     setAudioFiles([]);
     setImageFiles([]);
     setIsPromptDragOver(false);
+  }
+
+  function applyControlPreset(presetKey) {
+    const preset = CONTROL_PRESETS[presetKey];
+    if (!preset) {
+      return;
+    }
+
+    setTemperature(clamp(preset.temperature, 0, modelLimits.maxTemperature));
+    setTopK(clamp(preset.topK, 1, modelLimits.maxTopK));
   }
 
   async function handleSubmit(event) {
@@ -1302,6 +1426,43 @@ export default function App() {
                     </FormControl>
 
                     <Grid container spacing={2}>
+                      <Grid size={{ xs: 12 }}>
+                        <Stack spacing={1.25}>
+                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                            <Typography variant="body2" fontWeight={700}>
+                              {t.experimentalControls}
+                            </Typography>
+                            <Chip size="small" color="warning" label="Experimental" />
+                          </Stack>
+                          <Typography variant="body2" color="text.secondary">
+                            {t.experimentalControlsHelp}
+                          </Typography>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            <Chip
+                              clickable
+                              variant="outlined"
+                              color="secondary"
+                              label={t.precisePreset}
+                              onClick={() => applyControlPreset('precise')}
+                            />
+                            <Chip
+                              clickable
+                              variant="outlined"
+                              color="secondary"
+                              label={t.balancedPreset}
+                              onClick={() => applyControlPreset('balanced')}
+                            />
+                            <Chip
+                              clickable
+                              variant="outlined"
+                              color="secondary"
+                              label={t.creativePreset}
+                              onClick={() => applyControlPreset('creative')}
+                            />
+                          </Stack>
+                        </Stack>
+                      </Grid>
+
                       <Grid size={{ xs: 12, sm: 6 }}>
                         <Stack spacing={1}>
                           <Typography variant="body2" fontWeight={700}>
@@ -1381,14 +1542,14 @@ export default function App() {
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                       <Button
-                        type="button"
-                        variant={isDictating ? 'contained' : 'outlined'}
+                      type="button"
+                        variant={isDictating || isCapturingAudio ? 'contained' : 'outlined'}
                         color="secondary"
-                        startIcon={isDictating ? <StopCircleRounded /> : <MicRounded />}
-                        onClick={toggleDictation}
-                        disabled={!speechSupported || !!fatalError}
+                        startIcon={isDictating || isCapturingAudio ? <StopCircleRounded /> : <MicRounded />}
+                        onClick={toggleMicrophone}
+                        disabled={!speechSupported && !microphoneCaptureSupported}
                       >
-                        {isDictating ? t.stopDictation : t.useMicrophone}
+                        {isDictating || isCapturingAudio ? t.stopDictation : t.useMicrophone}
                       </Button>
 
                     </Stack>

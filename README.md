@@ -53,8 +53,9 @@ Because Prompt API is still experimental, exact behavior, supported languages, a
 - Interface language selector for product demos and usability
 - Chat, audio transcription, and image text extraction flows
 - Unified file upload and drag-and-drop for text, audio, image, and generic files
-- Microphone recording for multimodal audio input
+- Microphone input for prompt dictation or audio capture, depending on browser support
 - Prompt dictation through Web Speech API when `SpeechRecognition` is available
+- Audio capture fallback through `MediaRecorder` when speech dictation is not available
 - Streaming output rendering
 - Auto-scrolling output panel during streaming
 - Download/preparation status feedback for the local model
@@ -70,6 +71,7 @@ Because Prompt API is still experimental, exact behavior, supported languages, a
 - react-i18next
 - Chrome Prompt API for browser-based LLM access
 - Web Speech API
+- MediaRecorder API fallback
 
 ## Run locally
 
