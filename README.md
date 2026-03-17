@@ -80,12 +80,6 @@ npm install
 npm start
 ```
 
-or:
-
-```bash
-npm run dev
-```
-
 Open the local URL shown by Vite in Google Chrome or Chrome Canary.
 
 ## Production build
@@ -95,30 +89,6 @@ npm run build
 ```
 
 The production files will be generated in `dist/`.
-
-## Versioning
-
-The project version is defined in `package.json` and is also displayed inside the portfolio UI.
-
-Before publishing a new release, update the `version` field in `package.json`.
-
-## FTP deployment
-
-The project includes an FTP deployment script designed for traditional hosting environments.
-
-```bash
-FTP_HOST=ftp.cmrdev.lat \
-FTP_USER=your_user \
-FTP_PASSWORD=your_password \
-FTP_REMOTE_DIR=/ \
-npm run deploy:ftp
-```
-
-If the server requires FTPS:
-
-```bash
-FTP_SECURE=true
-```
 
 ## Interface and accessibility
 
