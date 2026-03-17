@@ -16,6 +16,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Slider,
   Stack,
   Switch,
   Tab,
@@ -29,17 +30,24 @@ import ImageSearchRounded from '@mui/icons-material/ImageSearchRounded';
 import MicRounded from '@mui/icons-material/MicRounded';
 import PsychologyAltRounded from '@mui/icons-material/PsychologyAltRounded';
 import StopCircleRounded from '@mui/icons-material/StopCircleRounded';
-import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
 import packageJson from '../package.json';
 
-const availabilityOptions = {
-  expectedInputs: [
-    { type: 'text', languages: ['en', 'es', 'ja'] },
-    { type: 'image' },
-    { type: 'audio' },
-  ],
-  expectedOutputs: [{ type: 'text', languages: ['en', 'es', 'ja'] }],
-};
+function getAvailabilityOptions(tab, modelLanguage) {
+  const expectedInputs = [{ type: 'text', languages: [modelLanguage] }];
+
+  if (tab === 'audio') {
+    expectedInputs.push({ type: 'audio' });
+  }
+
+  if (tab === 'image') {
+    expectedInputs.push({ type: 'image' });
+  }
+
+  return {
+    expectedInputs,
+    expectedOutputs: [{ type: 'text', languages: [modelLanguage] }],
+  };
+}
 
 const taskInstructions = {
   chat: {
@@ -144,6 +152,7 @@ const uiCopy = {
     preparingModelAction: 'Preparando modelo...',
     runTask: 'Executar tarefa',
     stop: 'Interromper',
+    clearPrompt: 'Limpar prompt',
     clearOutput: 'Limpar output',
     practicalNotes: 'Observacoes praticas',
     practicalNotesItems: [
@@ -218,6 +227,7 @@ const uiCopy = {
     preparingModelAction: 'Preparing model...',
     runTask: 'Run task',
     stop: 'Stop',
+    clearPrompt: 'Clear prompt',
     clearOutput: 'Clear output',
     practicalNotes: 'Practical notes',
     practicalNotesItems: [
@@ -292,6 +302,7 @@ const uiCopy = {
     preparingModelAction: 'Preparando modelo...',
     runTask: 'Ejecutar tarea',
     stop: 'Detener',
+    clearPrompt: 'Limpiar prompt',
     clearOutput: 'Limpiar salida',
     practicalNotes: 'Notas practicas',
     practicalNotesItems: [
@@ -412,6 +423,18 @@ function resolveAvailabilityKind(availability) {
   }
 
   return availability;
+}
+
+async function readModelParams() {
+  if (!('LanguageModel' in self) || typeof LanguageModel.params !== 'function') {
+    return null;
+  }
+
+  try {
+    return await LanguageModel.params();
+  } catch {
+    return null;
+  }
 }
 
 function getUnavailableDiagnostics(uiLanguage) {
@@ -636,6 +659,10 @@ function formatFileSize(size) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function appendFiles(currentFiles, nextFiles) {
+  return [...currentFiles, ...Array.from(nextFiles ?? [])];
+}
+
 function isTextLikeFile(file) {
   return (
     file.type.startsWith('text/') ||
@@ -672,22 +699,29 @@ export default function App() {
   const speechRecognitionRef = useRef(null);
   const audioInputRef = useRef(null);
   const imageInputRef = useRef(null);
+  const genericInputRef = useRef(null);
+  const outputRef = useRef(null);
 
   const [tab, setTab] = useState('chat');
   const [uiLanguage, setUiLanguage] = useState('en-US');
   const [modelLanguage, setModelLanguage] = useState('en');
   const [speechLanguage, setSpeechLanguage] = useState('pt-BR');
+  const [temperature, setTemperature] = useState(1);
+  const [topK, setTopK] = useState(3);
+  const [modelLimits, setModelLimits] = useState({
+    maxTemperature: 2,
+    maxTopK: 128,
+  });
   const [prompt, setPrompt] = useState('');
   const [output, setOutput] = useState(uiCopy['en-US'].responsePlaceholder);
   const [status, setStatus] = useState({ kind: 'checking', message: getStatusMessage('checking', 'en-US') });
   const [fatalError, setFatalError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isPreparingModel, setIsPreparingModel] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
-  const [audioFile, setAudioFile] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
+  const [audioFiles, setAudioFiles] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
   const [isAudioDragOver, setIsAudioDragOver] = useState(false);
   const [isImageDragOver, setIsImageDragOver] = useState(false);
   const [isPromptDragOver, setIsPromptDragOver] = useState(false);
@@ -719,7 +753,17 @@ export default function App() {
         const recognitionCtor = getSpeechRecognition();
         setSpeechSupported(Boolean(recognitionCtor));
 
-        const availability = await LanguageModel.availability(availabilityOptions);
+        const params = await readModelParams();
+        if (params && active) {
+          setModelLimits({
+            maxTemperature: params.maxTemperature,
+            maxTopK: params.maxTopK,
+          });
+          setTemperature(params.defaultTemperature);
+          setTopK(params.defaultTopK);
+        }
+
+        const availability = await LanguageModel.availability(getAvailabilityOptions(tab, modelLanguage));
         if (!active) {
           return;
         }
@@ -772,6 +816,14 @@ export default function App() {
   }, [uiLanguage]);
 
   useEffect(() => {
+    if (!outputRef.current) {
+      return;
+    }
+
+    outputRef.current.scrollTop = outputRef.current.scrollHeight;
+  }, [output]);
+
+  useEffect(() => {
     const saved = window.localStorage.getItem('cmrdev-cookie-consent');
     if (!saved) {
       return;
@@ -807,7 +859,7 @@ export default function App() {
         type: blob.type || 'audio/webm',
       });
 
-      setAudioFile(file);
+      setAudioFiles([file]);
       setIsRecording(false);
       stream.getTracks().forEach((track) => track.stop());
     });
@@ -894,38 +946,42 @@ export default function App() {
     }
 
     if (tab === 'audio') {
-      if (!audioFile) {
+      if (audioFiles.length === 0) {
         throw new Error(getErrorMessage('audioRequired', uiLanguage));
       }
 
-      if (audioFile.type.startsWith('audio/')) {
-        content.push({
-          type: 'audio',
-          value: audioFile,
-        });
-      } else {
-        content.push({
-          type: 'text',
-          value: await buildGenericFileContext(audioFile),
-        });
+      for (const file of audioFiles) {
+        if (file.type.startsWith('audio/')) {
+          content.push({
+            type: 'audio',
+            value: file,
+          });
+        } else {
+          content.push({
+            type: 'text',
+            value: await buildGenericFileContext(file),
+          });
+        }
       }
     }
 
     if (tab === 'image') {
-      if (!imageFile) {
+      if (imageFiles.length === 0) {
         throw new Error(getErrorMessage('imageRequired', uiLanguage));
       }
 
-      if (imageFile.type.startsWith('image/')) {
-        content.push({
-          type: 'image',
-          value: imageFile,
-        });
-      } else {
-        content.push({
-          type: 'text',
-          value: await buildGenericFileContext(imageFile),
-        });
+      for (const file of imageFiles) {
+        if (file.type.startsWith('image/')) {
+          content.push({
+            type: 'image',
+            value: file,
+          });
+        } else {
+          content.push({
+            type: 'text',
+            value: await buildGenericFileContext(file),
+          });
+        }
       }
     }
 
@@ -936,26 +992,25 @@ export default function App() {
     return content;
   }
 
-  function handleDroppedFile(fileType, file) {
-    if (!file) {
+  function handleDroppedFiles(fileType, files) {
+    if (!files?.length) {
       return;
     }
 
     if (fileType === 'audio') {
-      setAudioFile(file);
+      setAudioFiles((currentFiles) => appendFiles(currentFiles, files));
       return;
     }
 
     if (fileType === 'image') {
-      setImageFile(file);
+      setImageFiles((currentFiles) => appendFiles(currentFiles, files));
     }
   }
 
   function handleDrop(event, fileType) {
     event.preventDefault();
 
-    const file = event.dataTransfer.files?.[0];
-    handleDroppedFile(fileType, file);
+    handleDroppedFiles(fileType, event.dataTransfer.files);
 
     if (fileType === 'audio') {
       setIsAudioDragOver(false);
@@ -965,27 +1020,127 @@ export default function App() {
     setIsImageDragOver(false);
   }
 
-  function handlePromptDrop(event) {
+  async function handlePromptFiles(fileList) {
+    const files = Array.from(fileList ?? []);
+    if (files.length === 0) {
+      return;
+    }
+
+    const imageBatch = files.filter((file) => file.type.startsWith('image/'));
+    const audioBatch = files.filter((file) => file.type.startsWith('audio/'));
+    const genericBatch = files.filter(
+      (file) => !file.type.startsWith('image/') && !file.type.startsWith('audio/')
+    );
+
+    if (imageBatch.length > 0) {
+      setImageFiles((currentFiles) => appendFiles(currentFiles, imageBatch));
+      setTab('image');
+    }
+
+    if (audioBatch.length > 0) {
+      setAudioFiles((currentFiles) => appendFiles(currentFiles, audioBatch));
+      setTab('audio');
+    }
+
+    const appendPromptContext = (value) => {
+      setPrompt((currentPrompt) => {
+        const trimmedPrompt = currentPrompt.trim();
+        if (!trimmedPrompt) {
+          return value;
+        }
+
+        return `${trimmedPrompt}\n\n---\n\n${value}`;
+      });
+    };
+
+    for (const file of genericBatch) {
+      if (isTextLikeFile(file)) {
+        try {
+          const text = await file.text();
+          appendPromptContext(text.slice(0, 12000));
+          continue;
+        } catch {
+          appendPromptContext(await buildGenericFileContext(file));
+          continue;
+        }
+      }
+
+      appendPromptContext(await buildGenericFileContext(file));
+    }
+  }
+
+  async function handlePromptDrop(event) {
     event.preventDefault();
     setIsPromptDragOver(false);
 
-    const file = event.dataTransfer.files?.[0];
-    if (!file) {
-      return;
-    }
+    await handlePromptFiles(event.dataTransfer.files);
+  }
 
-    if (tab === 'image') {
-      setImageFile(file);
-      return;
-    }
+  function renderGenericDropZone() {
+    const activeFiles = tab === 'image' ? imageFiles : tab === 'audio' ? audioFiles : [...imageFiles, ...audioFiles];
 
-    setAudioFile(file);
+    return (
+      <Box
+        role="button"
+        tabIndex={0}
+        aria-label={t.dropFile}
+        onClick={() => genericInputRef.current?.click()}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            genericInputRef.current?.click();
+          }
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setIsPromptDragOver(true);
+        }}
+        onDragLeave={() => setIsPromptDragOver(false)}
+        onDrop={handlePromptDrop}
+        sx={{
+          p: 2,
+          borderRadius: 1,
+          border: '2px dashed',
+          borderColor: isPromptDragOver ? 'secondary.main' : 'divider',
+          backgroundColor: isPromptDragOver ? 'rgba(33,92,115,0.08)' : 'rgba(255,255,255,0.48)',
+          cursor: 'pointer',
+          transition: 'all 160ms ease',
+          '&:focus-visible': {
+            outline: 'none',
+            borderColor: 'primary.main',
+            boxShadow: '0 0 0 3px rgba(143,61,31,0.14)',
+          },
+        }}
+      >
+        <Stack spacing={0.75}>
+          <Typography fontWeight={700}>{t.uploadFile}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t.dropFile}
+          </Typography>
+          {activeFiles.length > 0 && (
+            <Typography variant="body2" color="secondary.main" sx={{ fontWeight: 700 }}>
+              {t.selectedFile}: {activeFiles.length} files
+            </Typography>
+          )}
+        </Stack>
+        <input
+          ref={genericInputRef}
+          hidden
+          type="file"
+          multiple
+          accept="*"
+          onChange={async (event) => {
+            await handlePromptFiles(event.target.files);
+            event.target.value = '';
+          }}
+        />
+      </Box>
+    );
   }
 
   function renderDropZone(fileType) {
     const isAudio = fileType === 'audio';
     const isDragOver = isAudio ? isAudioDragOver : isImageDragOver;
-    const file = isAudio ? audioFile : imageFile;
     const inputRef = isAudio ? audioInputRef : imageInputRef;
     const accept = '*';
     const helperText = isAudio ? t.dropFile : t.dropFile;
@@ -1038,22 +1193,14 @@ export default function App() {
           <Typography variant="body2" color="text.secondary">
             {helperText}
           </Typography>
-          {file && (
-            <Chip
-              size="small"
-              color="secondary"
-              variant="outlined"
-              sx={{ alignSelf: 'flex-start', mt: 0.5 }}
-              label={`${t.selectedFile}: ${file.name}`}
-            />
-          )}
         </Stack>
         <input
           ref={inputRef}
           hidden
           type="file"
+          multiple
           accept={accept}
-          onChange={(event) => handleDroppedFile(fileType, event.target.files?.[0] ?? null)}
+          onChange={(event) => handleDroppedFiles(fileType, event.target.files)}
         />
       </Box>
     );
@@ -1087,50 +1234,13 @@ export default function App() {
     });
   }
 
-  async function prepareLocalModel() {
-    try {
-      setIsPreparingModel(true);
-      setRuntimeMode('download');
-      setStatus({
-        kind: 'downloadable',
-        message: getStatusMessage('downloadable', uiLanguage),
-      });
-      setOutput(getErrorMessage('preparingModel', uiLanguage));
-
-      sessionRef.current?.destroy?.();
-
-      sessionRef.current = await LanguageModel.create({
-        expectedInputs: [{ type: 'text', languages: [modelLanguage] }],
-        expectedOutputs: [{ type: 'text', languages: [modelLanguage] }],
-        monitor(monitor) {
-          monitor.addEventListener('downloadprogress', (progress) => {
-            const percent = toPercent(progress);
-            setStatus({
-              kind: 'downloading',
-              message: `Preparing local model: ${percent}%`,
-            });
-          });
-        },
-      });
-
-      setRuntimeMode('browser');
-      setStatus({
-        kind: 'ready',
-        message: getStatusMessage('ready', uiLanguage),
-      });
-      setDiagnostics([]);
-      sessionRef.current?.destroy?.();
-      sessionRef.current = null;
-      setOutput(t.responsePlaceholder);
-    } catch (error) {
-      setStatus({
-        kind: 'attention',
-        message: error.message,
-      });
-      setOutput(`${t.errorPrefix} ${error.message}`);
-    } finally {
-      setIsPreparingModel(false);
-    }
+  function clearPromptInputs() {
+    setPrompt('');
+    setAudioFiles([]);
+    setImageFiles([]);
+    setIsAudioDragOver(false);
+    setIsImageDragOver(false);
+    setIsPromptDragOver(false);
   }
 
   async function handleSubmit(event) {
@@ -1147,20 +1257,15 @@ export default function App() {
     }
 
     try {
-      const availability = await LanguageModel.availability(availabilityOptions);
+      const availability = await LanguageModel.availability(getAvailabilityOptions(tab, modelLanguage));
       const resolvedKind = resolveAvailabilityKind(availability);
+      const sessionOptions = getAvailabilityOptions(tab, modelLanguage);
 
       setStatus({
         kind: resolvedKind,
         message: getStatusMessage(resolvedKind, uiLanguage),
       });
       setDiagnostics(availability === 'unavailable' ? getUnavailableDiagnostics(uiLanguage) : []);
-
-      if (availability === 'unavailable') {
-        setRuntimeMode('download');
-        setOutput(getErrorMessage('preparingModel', uiLanguage));
-        return;
-      }
 
       setIsGenerating(true);
       setOutput(getErrorMessage('preparingSession', uiLanguage));
@@ -1172,15 +1277,13 @@ export default function App() {
 
       const userContent = await buildUserContent();
 
-      setRuntimeMode('browser');
+      setRuntimeMode(availability === 'available' ? 'browser' : 'download');
 
       sessionRef.current = await LanguageModel.create({
-        expectedInputs: [
-          { type: 'text', languages: [modelLanguage] },
-          { type: 'audio' },
-          { type: 'image' },
-        ],
-        expectedOutputs: [{ type: 'text', languages: [modelLanguage] }],
+        expectedInputs: sessionOptions.expectedInputs,
+        expectedOutputs: sessionOptions.expectedOutputs,
+        temperature,
+        topK,
         initialPrompts: [
           {
             role: 'system',
@@ -1203,6 +1306,16 @@ export default function App() {
           });
         },
       });
+
+      setRuntimeMode('browser');
+
+      const params = await readModelParams();
+      if (params) {
+        setModelLimits({
+          maxTemperature: params.maxTemperature,
+          maxTopK: params.maxTopK,
+        });
+      }
 
       const stream = await sessionRef.current.promptStreaming(
         [
@@ -1595,24 +1708,49 @@ export default function App() {
                           <FormHelperText id="speech-language-help">{t.microphoneLanguageHelp}</FormHelperText>
                         </FormControl>
                       </Grid>
+
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <Stack spacing={1}>
+                          <Typography variant="body2" fontWeight={700}>
+                            {t.temperature}: {temperature}
+                          </Typography>
+                          <Slider
+                            value={temperature}
+                            min={0}
+                            max={modelLimits.maxTemperature}
+                            step={0.1}
+                            valueLabelDisplay="auto"
+                            onChange={(_, value) => {
+                              setTemperature(Array.isArray(value) ? value[0] : value);
+                            }}
+                          />
+                        </Stack>
+                      </Grid>
+
+                      <Grid size={{ xs: 12, sm: 6 }}>
+                        <Stack spacing={1}>
+                          <Typography variant="body2" fontWeight={700}>
+                            {t.topK}: {topK}
+                          </Typography>
+                          <Slider
+                            value={topK}
+                            min={1}
+                            max={modelLimits.maxTopK}
+                            step={1}
+                            valueLabelDisplay="auto"
+                            onChange={(_, value) => {
+                              setTopK(Array.isArray(value) ? value[0] : value);
+                            }}
+                          />
+                        </Stack>
+                      </Grid>
                     </Grid>
 
                     <Box
-                      onDragOver={(event) => {
-                        event.preventDefault();
-                        setIsPromptDragOver(true);
-                      }}
-                      onDragLeave={() => setIsPromptDragOver(false)}
-                      onDrop={handlePromptDrop}
                       sx={{
                         ...BALLOON_SURFACE_SX,
                         p: 2,
                         borderRadius: 0.5,
-                        borderColor: isPromptDragOver ? 'secondary.main' : 'rgba(47,34,24,0.12)',
-                        background: isPromptDragOver
-                          ? 'linear-gradient(180deg, rgba(222,239,245,0.9), rgba(255,246,238,0.92))'
-                          : BALLOON_SURFACE_SX.background,
-                        transition: 'all 160ms ease',
                       }}
                     >
                       <Typography variant="overline" color="primary" sx={{ display: 'block', mb: 1 }}>
@@ -1644,10 +1782,9 @@ export default function App() {
                         }}
                       />
                       <Divider sx={{ my: 1.5, opacity: 0.6 }} />
-                      <Typography variant="body2" color="text.secondary" sx={{ display: 'none' }}>
-                        {t.dropPrompt}
-                      </Typography>
                     </Box>
+
+                    {renderGenericDropZone()}
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                       <Button
@@ -1673,63 +1810,13 @@ export default function App() {
                       </Button>
                     </Stack>
 
-                    {tab === 'audio' && (
-                      <Stack spacing={1.25}>
-                        {renderDropZone('audio')}
-                        <Button
-                          component="label"
-                          variant="outlined"
-                          startIcon={<UploadFileRounded />}
-                        >
-                          {audioFile ? `${t.fileLabel}: ${audioFile.name}` : t.uploadFile}
-                          <input
-                            hidden
-                            type="file"
-                            accept="*"
-                            onChange={(event) => setAudioFile(event.target.files?.[0] ?? null)}
-                          />
-                        </Button>
-                      </Stack>
-                    )}
-
-                    {tab === 'image' && (
-                      <Stack spacing={1.25}>
-                        {renderDropZone('image')}
-                        <Button
-                          component="label"
-                          variant="outlined"
-                          startIcon={<UploadFileRounded />}
-                        >
-                          {imageFile ? `${t.fileLabel}: ${imageFile.name}` : t.uploadFile}
-                          <input
-                            hidden
-                            type="file"
-                            accept="*"
-                            onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-                          />
-                        </Button>
-                      </Stack>
-                    )}
-
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                      {(runtimeMode === 'download' || ['downloadable', 'downloading'].includes(status.kind)) && (
-                        <Button
-                          type="button"
-                          variant="outlined"
-                          color="secondary"
-                          onClick={prepareLocalModel}
-                          disabled={isPreparingModel || !!fatalError}
-                        >
-                          {isPreparingModel ? t.preparingModelAction : t.prepareModel}
-                        </Button>
-                      )}
-
                       <Button
                         type="submit"
                         variant="contained"
                         size="large"
                         startIcon={isGenerating ? <StopCircleRounded /> : <AutoAwesomeRounded />}
-                        disabled={!!fatalError || runtimeMode !== 'browser' || isPreparingModel}
+                        disabled={!!fatalError}
                         sx={{ flex: 1, py: 1.35 }}
                       >
                         {isGenerating ? t.stop : t.runTask}
@@ -1737,7 +1824,16 @@ export default function App() {
 
                       <Button
                         type="button"
-                        variant="text"
+                        variant="outlined"
+                        color="secondary"
+                        onClick={clearPromptInputs}
+                      >
+                        {t.clearPrompt}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outlined"
                         color="secondary"
                         onClick={() => setOutput(t.responsePlaceholder)}
                       >
@@ -1776,42 +1872,6 @@ export default function App() {
                   elevation={0}
                   sx={{
                     p: 2.5,
-                    minHeight: 380,
-                    border: '1px solid rgba(47,34,24,0.08)',
-                    background:
-                      'linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,248,240,0.96))',
-                    boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
-                  }}
-                >
-                  <Stack spacing={1.25}>
-                    <Box>
-                      <Typography variant="overline" color="primary">
-                        {t.output}
-                      </Typography>
-                      <Typography variant="h5">{t.llmResult}</Typography>
-                    </Box>
-                    <Divider />
-                    <Typography
-                      component="pre"
-                      sx={{
-                        m: 0,
-                        whiteSpace: 'pre-wrap',
-                        overflowWrap: 'anywhere',
-                        fontFamily: '"Segoe UI", sans-serif',
-                        fontSize: '0.93rem',
-                        lineHeight: 1.8,
-                        color: 'text.primary',
-                      }}
-                    >
-                      {output || t.responsePlaceholder}
-                    </Typography>
-                  </Stack>
-                </Paper>
-
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
                     border: '1px solid rgba(47,34,24,0.08)',
                     boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
                     background: 'rgba(255, 250, 244, 0.9)',
@@ -1839,6 +1899,46 @@ export default function App() {
                       </Grid>
                     ))}
                   </Grid>
+                </Paper>
+
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2.5,
+                    minHeight: 380,
+                    border: '1px solid rgba(47,34,24,0.08)',
+                    background:
+                      'linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,248,240,0.96))',
+                    boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
+                  }}
+                >
+                  <Stack spacing={1.25}>
+                    <Box>
+                      <Typography variant="overline" color="primary">
+                        {t.output}
+                      </Typography>
+                      <Typography variant="h5">{t.llmResult}</Typography>
+                    </Box>
+                    <Divider />
+                    <Typography
+                      ref={outputRef}
+                      component="pre"
+                      sx={{
+                        m: 0,
+                        maxHeight: { xs: 320, md: 420 },
+                        overflowY: 'auto',
+                        pr: 1,
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'anywhere',
+                        fontFamily: '"Segoe UI", sans-serif',
+                        fontSize: '0.93rem',
+                        lineHeight: 1.8,
+                        color: 'text.primary',
+                      }}
+                    >
+                      {output || t.responsePlaceholder}
+                    </Typography>
+                  </Stack>
                 </Paper>
 
                 <Paper
