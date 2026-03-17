@@ -70,7 +70,6 @@ Because Prompt API is still experimental, exact behavior, supported languages, a
 - react-i18next
 - Chrome Prompt API for browser-based LLM access
 - Web Speech API
-- MediaRecorder API
 
 ## Run locally
 

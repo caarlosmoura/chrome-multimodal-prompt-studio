@@ -23,7 +23,6 @@ import {
   Typography,
 } from '@mui/material';
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
-import GraphicEqRounded from '@mui/icons-material/GraphicEqRounded';
 import MicRounded from '@mui/icons-material/MicRounded';
 import PsychologyAltRounded from '@mui/icons-material/PsychologyAltRounded';
 import StopCircleRounded from '@mui/icons-material/StopCircleRounded';
@@ -270,9 +269,9 @@ function getErrorMessage(key, uiLanguage) {
       'es-ES': 'No fue posible copiar automaticamente. Copialo manualmente.',
     },
     audioRequired: {
-      'pt-BR': 'Envie ou grave um audio antes de solicitar a transcricao.',
-      'en-US': 'Upload or record an audio file before requesting transcription.',
-      'es-ES': 'Sube o graba un audio antes de solicitar la transcripcion.',
+      'pt-BR': 'Envie um audio antes de solicitar a transcricao.',
+      'en-US': 'Upload an audio file before requesting transcription.',
+      'es-ES': 'Sube un audio antes de solicitar la transcripcion.',
     },
     imageRequired: {
       'pt-BR': 'Envie uma imagem antes de solicitar a extracao.',
@@ -403,8 +402,18 @@ function getDiagnosticsSections(uiLanguage) {
   return sections[uiLanguage] || sections['en-US'];
 }
 
-function buildSystemPrompt(tab, language) {
-  return taskInstructions[tab][language];
+function getResponseLanguageInstruction(uiLanguage) {
+  const instructions = {
+    'pt-BR': 'Write the final response in Brazilian Portuguese.',
+    'en-US': 'Write the final response in English.',
+    'es-ES': 'Write the final response in Spanish.',
+  };
+
+  return instructions[uiLanguage] || instructions['en-US'];
+}
+
+function buildSystemPrompt(tab, language, uiLanguage) {
+  return `${taskInstructions[tab][language]} ${getResponseLanguageInstruction(uiLanguage)}`;
 }
 
 function formatFileSize(size) {
@@ -459,8 +468,6 @@ export default function App() {
   const { i18n } = useTranslation();
   const sessionRef = useRef(null);
   const abortControllerRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const recordingChunksRef = useRef([]);
   const speechRecognitionRef = useRef(null);
   const genericInputRef = useRef(null);
   const outputRef = useRef(null);
@@ -481,7 +488,6 @@ export default function App() {
   const [fatalError, setFatalError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [audioFiles, setAudioFiles] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
@@ -559,7 +565,6 @@ export default function App() {
       abortControllerRef.current?.abort();
       sessionRef.current?.destroy?.();
       speechRecognitionRef.current?.stop?.();
-      mediaRecorderRef.current?.stop?.();
     };
   }, [effectiveTab, modelLanguage, t.errorPrefix, uiLanguage]);
 
@@ -612,38 +617,6 @@ export default function App() {
       window.localStorage.removeItem('cmrdev-cookie-consent');
     }
   }, []);
-
-  async function createAudioRecording() {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream);
-
-    recordingChunksRef.current = [];
-    mediaRecorderRef.current = recorder;
-
-    recorder.addEventListener('dataavailable', (event) => {
-      if (event.data.size > 0) {
-        recordingChunksRef.current.push(event.data);
-      }
-    });
-
-    recorder.addEventListener('stop', () => {
-      const blob = new Blob(recordingChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-      const file = new File([blob], `recording-${Date.now()}.webm`, {
-        type: blob.type || 'audio/webm',
-      });
-
-      setAudioFiles([file]);
-      setIsRecording(false);
-      stream.getTracks().forEach((track) => track.stop());
-    });
-
-    recorder.start();
-    setIsRecording(true);
-  }
-
-  function stopAudioRecording() {
-    mediaRecorderRef.current?.stop();
-  }
 
   function toggleDictation() {
     const recognitionCtor = getSpeechRecognition();
@@ -966,7 +939,7 @@ export default function App() {
             content: [
               {
                 type: 'text',
-                value: buildSystemPrompt(effectiveTab, modelLanguage),
+                value: buildSystemPrompt(effectiveTab, modelLanguage, uiLanguage),
               },
             ],
           },
@@ -976,7 +949,12 @@ export default function App() {
             const percent = toPercent(progress);
             setStatus({
               kind: 'downloading',
-              message: `Preparando modelo local: ${percent}%`,
+              message:
+                uiLanguage === 'pt-BR'
+                  ? `Preparando modelo local: ${percent}%`
+                  : uiLanguage === 'es-ES'
+                    ? `Preparando el modelo local: ${percent}%`
+                    : `Preparing local model: ${percent}%`,
             });
             setOutput(getErrorMessage('preparingModel', uiLanguage));
           });
@@ -1413,16 +1391,6 @@ export default function App() {
                         {isDictating ? t.stopDictation : t.useMicrophone}
                       </Button>
 
-                      <Button
-                        type="button"
-                        variant={isRecording ? 'contained' : 'outlined'}
-                        color="secondary"
-                        startIcon={isRecording ? <StopCircleRounded /> : <GraphicEqRounded />}
-                        onClick={isRecording ? stopAudioRecording : createAudioRecording}
-                        disabled={effectiveTab !== 'audio' || !!fatalError}
-                      >
-                        {isRecording ? t.stopRecording : t.recordAudio}
-                      </Button>
                     </Stack>
 
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
