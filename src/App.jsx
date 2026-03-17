@@ -31,6 +31,12 @@ import { resources } from './i18n';
 import packageJson from '../package.json';
 
 function getAvailabilityOptions(tab, modelLanguage) {
+  if (tab === 'chat') {
+    return {
+      languages: [modelLanguage],
+    };
+  }
+
   const expectedInputs = [{ type: 'text', languages: [modelLanguage] }];
 
   if (tab === 'audio') {
@@ -44,6 +50,40 @@ function getAvailabilityOptions(tab, modelLanguage) {
   return {
     expectedInputs,
     expectedOutputs: [{ type: 'text', languages: [modelLanguage] }],
+  };
+}
+
+function getCreateSessionOptions(tab, modelLanguage, temperature, topK, systemPrompt) {
+  if (tab === 'chat') {
+    return {
+      expectedInputLanguages: [modelLanguage],
+      temperature,
+      topK,
+      initialPrompts: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+      ],
+    };
+  }
+
+  return {
+    expectedInputs: [{ type: 'text', languages: [modelLanguage] }, ...(tab === 'audio' ? [{ type: 'audio' }] : []), ...(tab === 'image' ? [{ type: 'image' }] : [])],
+    expectedOutputs: [{ type: 'text', languages: [modelLanguage] }],
+    temperature,
+    topK,
+    initialPrompts: [
+      {
+        role: 'system',
+        content: [
+          {
+            type: 'text',
+            value: systemPrompt,
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -102,8 +142,8 @@ const HERO_BALLOON_SX = {
 const HERO_COMPACT_CARD_SX = {
   ...HERO_BALLOON_SX,
   borderRadius: 0.5,
-  py: 1.1,
-  px: 1.35,
+  py: 1.95,
+  px: 1.1,
 };
 
 const CONTROL_PRESETS = {
@@ -441,8 +481,24 @@ function getResponseLanguageInstruction(uiLanguage) {
   return instructions[uiLanguage] || instructions['en-US'];
 }
 
+function getPlainTextInstruction(uiLanguage) {
+  const instructions = {
+    'pt-BR': 'Respond clearly and objectively. Always respond in plain text instead of markdown.',
+    'en-US': 'Respond clearly and objectively. Always respond in plain text instead of markdown.',
+    'es-ES': 'Responde con claridad y objetividad. Responde siempre en texto plano en lugar de markdown.',
+  };
+
+  return instructions[uiLanguage] || instructions['en-US'];
+}
+
 function buildSystemPrompt(tab, language, uiLanguage) {
-  return `${taskInstructions[tab][language]} ${getResponseLanguageInstruction(uiLanguage)}`;
+  if (tab === 'chat') {
+    return `${getPlainTextInstruction(uiLanguage)} ${getResponseLanguageInstruction(uiLanguage)}`;
+  }
+
+  return `${taskInstructions[tab][language]} ${getPlainTextInstruction(
+    uiLanguage
+  )} ${getResponseLanguageInstruction(uiLanguage)}`;
 }
 
 function formatFileSize(size) {
@@ -467,6 +523,32 @@ function appendFiles(currentFiles, nextFiles) {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
+}
+
+function normalizeModelLimits(params) {
+  const maxTemperature =
+    Number.isFinite(params?.maxTemperature) && params.maxTemperature > 0 ? params.maxTemperature : 2;
+  const maxTopK = Number.isFinite(params?.maxTopK) && params.maxTopK >= 1 ? params.maxTopK : 128;
+  const defaultTemperature = clamp(
+    Number.isFinite(params?.defaultTemperature) ? params.defaultTemperature : 1,
+    0,
+    maxTemperature
+  );
+  const defaultTopK = clamp(Math.round(Number.isFinite(params?.defaultTopK) ? params.defaultTopK : 3), 1, maxTopK);
+
+  return {
+    maxTemperature,
+    maxTopK,
+    defaultTemperature,
+    defaultTopK,
+  };
+}
+
+function normalizeGenerationControls(temperature, topK, limits) {
+  return {
+    temperature: clamp(Number.isFinite(temperature) ? temperature : 1, 0, limits.maxTemperature),
+    topK: clamp(Math.round(Number.isFinite(topK) ? topK : 3), 1, limits.maxTopK),
+  };
 }
 
 function isTextLikeFile(file) {
@@ -561,12 +643,13 @@ export default function App() {
 
         const params = await readModelParams();
         if (params && active) {
+          const normalizedLimits = normalizeModelLimits(params);
           setModelLimits({
-            maxTemperature: params.maxTemperature,
-            maxTopK: params.maxTopK,
+            maxTemperature: normalizedLimits.maxTemperature,
+            maxTopK: normalizedLimits.maxTopK,
           });
-          setTemperature(params.defaultTemperature);
-          setTopK(params.defaultTopK);
+          setTemperature(normalizedLimits.defaultTemperature);
+          setTopK(normalizedLimits.defaultTopK);
         }
 
         const availability = await LanguageModel.availability(getAvailabilityOptions(effectiveTab, modelLanguage));
@@ -1032,7 +1115,8 @@ export default function App() {
     try {
       const availability = await LanguageModel.availability(getAvailabilityOptions(effectiveTab, modelLanguage));
       const resolvedKind = resolveAvailabilityKind(availability);
-      const sessionOptions = getAvailabilityOptions(effectiveTab, modelLanguage);
+      const generationControls = normalizeGenerationControls(temperature, topK, modelLimits);
+      const systemPrompt = buildSystemPrompt(effectiveTab, modelLanguage, uiLanguage);
 
       setStatus({
         kind: resolvedKind,
@@ -1053,21 +1137,13 @@ export default function App() {
       setRuntimeMode(availability === 'available' ? 'browser' : 'download');
 
       sessionRef.current = await LanguageModel.create({
-        expectedInputs: sessionOptions.expectedInputs,
-        expectedOutputs: sessionOptions.expectedOutputs,
-        temperature,
-        topK,
-        initialPrompts: [
-          {
-            role: 'system',
-            content: [
-              {
-                type: 'text',
-                value: buildSystemPrompt(effectiveTab, modelLanguage, uiLanguage),
-              },
-            ],
-          },
-        ],
+        ...getCreateSessionOptions(
+          effectiveTab,
+          modelLanguage,
+          generationControls.temperature,
+          generationControls.topK,
+          systemPrompt
+        ),
         monitor(monitor) {
           monitor.addEventListener('downloadprogress', (progress) => {
             const percent = toPercent(progress);
@@ -1089,23 +1165,31 @@ export default function App() {
 
       const params = await readModelParams();
       if (params) {
+        const normalizedLimits = normalizeModelLimits(params);
         setModelLimits({
-          maxTemperature: params.maxTemperature,
-          maxTopK: params.maxTopK,
+          maxTemperature: normalizedLimits.maxTemperature,
+          maxTopK: normalizedLimits.maxTopK,
         });
       }
 
-      const stream = await sessionRef.current.promptStreaming(
-        [
-          {
-            role: 'user',
-            content: userContent,
-          },
-        ],
-        {
-          signal: abortControllerRef.current.signal,
-        }
-      );
+      const promptPayload =
+        effectiveTab === 'chat'
+          ? [
+              {
+                role: 'user',
+                content: prompt.trim(),
+              },
+            ]
+          : [
+              {
+                role: 'user',
+                content: userContent,
+              },
+            ];
+
+      const stream = await sessionRef.current.promptStreaming(promptPayload, {
+        signal: abortControllerRef.current.signal,
+      });
 
       setStatus({
         kind: 'generating',
@@ -1149,95 +1233,232 @@ export default function App() {
         minHeight: '100vh',
         background:
           'radial-gradient(circle at top left, rgba(143,61,31,0.16), transparent 28%), radial-gradient(circle at bottom right, rgba(33,92,115,0.18), transparent 28%), linear-gradient(180deg, #f5eee5 0%, #ede0d0 100%)',
-        py: { xs: 2.5, md: 4 },
+        py: { xs: 1.5, md: 2 },
+        color: 'text.primary',
+        '& .MuiTypography-colorTextSecondary, & .MuiFormHelperText-root': {
+          color: 'rgba(0,0,0,0.6) !important',
+        },
+        '& .MuiInputLabel-root': {
+          color: 'rgba(0,0,0,0.6)',
+        },
+        '& .MuiInputLabel-root.Mui-focused': {
+          color: 'rgba(0,0,0,0.6)',
+        },
+        '& .MuiInputBase-root, & .MuiInputBase-input, & .MuiSelect-select': {
+          color: 'rgba(0,0,0,0.87)',
+        },
+        '& .MuiDivider-root': {
+          borderColor: 'rgba(0,0,0,0.12)',
+        },
+        '& a': {
+          color: 'inherit',
+        },
+        '& .MuiOutlinedInput-notchedOutline': {
+          borderColor: 'rgba(0,0,0,0.23)',
+        },
+        '& .MuiPaper-root': {
+          color: 'rgba(0,0,0,0.87)',
+        },
+        '& .MuiChip-root': {
+          borderColor: 'rgba(47,34,24,0.18)',
+          color: 'rgba(0,0,0,0.87)',
+          backgroundColor: 'transparent',
+        },
+        '& .MuiButton-containedPrimary': {
+          background: '#8f3d1f',
+          color: '#fffaf6',
+          boxShadow: '0 8px 18px rgba(143,61,31,0.22)',
+          paddingInline: '10px',
+          minHeight: 34,
+        },
+        '& .MuiButton-containedPrimary:hover': {
+          background: '#7c341a',
+        },
+        '& .MuiButton-outlinedSecondary, & .MuiButton-outlined': {
+          borderColor: 'rgba(47,34,24,0.22)',
+          color: 'rgba(47,34,24,0.88)',
+          paddingInline: '10px',
+          minHeight: 34,
+        },
+        '& .MuiSlider-root': {
+          color: '#8f3d1f',
+        },
+        '& .MuiAlert-filledSuccess': {
+          background: '#2e7d32',
+        },
+        '& .MuiAlert-filledWarning': {
+          background: '#ed6c02',
+        },
+        '& .MuiAlert-filledError': {
+          background: '#d32f2f',
+        },
       }}
     >
-      <Container maxWidth="xl" sx={{ pb: cookieConsent.visible ? { xs: 14, md: 10 } : 0 }}>
-        <Stack spacing={2}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          pb: cookieConsent.visible ? { xs: 14, md: 10 } : 0,
+        }}
+      >
+        <Stack spacing={{ xs: 1, md: 1.25 }}>
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 2.25, md: 3 },
+              p: { xs: 1.5, md: 2 },
               border: '1px solid rgba(47,34,24,0.08)',
               background: 'linear-gradient(135deg, rgba(255,250,246,0.96), rgba(255,243,236,0.9))',
-              boxShadow: '0 14px 34px rgba(76, 48, 24, 0.08)',
+              boxShadow: '0 10px 24px rgba(76, 48, 24, 0.06)',
               overflow: 'hidden',
             }}
           >
-            <Grid container spacing={3} alignItems="center">
-              <Grid size={{ xs: 12, lg: 7.5 }}>
-                <Stack spacing={1.6}>
+            <Grid container spacing={{ xs: 1.25, md: 1.5 }} alignItems="center">
+              <Grid size={{ xs: 12, lg: 6.5 }}>
+                <Stack spacing={{ xs: 1.1, md: 1.5 }} sx={{ maxWidth: 860, height: '100%' }}>
                   <Chip
                     icon={<PsychologyAltRounded />}
                     label={t.heroTag}
                     color="secondary"
                     variant="outlined"
-                    sx={{ alignSelf: 'flex-start' }}
+                    sx={{
+                      alignSelf: 'flex-start',
+                      borderColor: 'rgba(143,61,31,0.28) !important',
+                      color: '#8f3d1f !important',
+                      backgroundColor: 'rgba(255,255,255,0.65)',
+                      '& .MuiChip-icon': {
+                        color: '#2c5f79 !important',
+                      },
+                      '& .MuiChip-label': {
+                        whiteSpace: 'nowrap',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        letterSpacing: 0,
+                        color: '#2c5f79 !important',
+                      },
+                    }}
                   />
+
                   <Typography
                     variant="h1"
                     sx={{
-                      fontSize: { xs: '2rem', md: '3rem' },
-                      letterSpacing: '-0.05em',
-                      lineHeight: 0.96,
+                      fontFamily: 'Georgia, "Times New Roman", serif',
+                      fontSize: { xs: '1.8rem', md: '2.7rem' },
+                      fontWeight: 700,
+                      letterSpacing: '-0.04em',
+                      lineHeight: 0.95,
+                      color: '#242220',
                     }}
                   >
                     {t.heroTitle}
                   </Typography>
-                  <Typography sx={{ maxWidth: 700, color: 'text.secondary', fontSize: { xs: '0.95rem', md: '1rem' }, lineHeight: 1.7 }}>
-                    {t.heroBody}
+
+                  <Typography
+                    sx={{
+                      maxWidth: 760,
+                      color: 'rgba(36,34,32,0.62)',
+                      fontSize: { xs: '1rem', md: '1rem' },
+                      lineHeight: 1.65,
+                    }}
+                  >
+                    {t.heroBody} {t.portfolioNote}
                   </Typography>
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-                    <Button variant="contained" color="primary" onClick={() => setTab('chat')}>
+
+                  <Stack direction="row" spacing={1.25} useFlexGap sx={{ flexWrap: 'wrap', mt: 'auto' }}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      sx={{
+                        whiteSpace: 'nowrap',
+                        borderRadius: 999,
+                        px: 2,
+                        minHeight: 36,
+                        fontWeight: 700,
+                      }}
+                      onClick={() => setTab('chat')}
+                    >
                       Explore demo
                     </Button>
-                    <Button variant="outlined" color="secondary" onClick={() => setTab('audio')}>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  sx={{
+                    whiteSpace: 'nowrap',
+                    borderRadius: 999,
+                    px: 2,
+                    minHeight: 36,
+                    fontWeight: 700,
+                    borderColor: 'rgba(53, 109, 139, 0.4) !important',
+                    color: '#2c5f79 !important',
+                  }}
+                  onClick={() => setTab('audio')}
+                >
                       Multimodal workflow
                     </Button>
                   </Stack>
                 </Stack>
               </Grid>
-              <Grid size={{ xs: 12, lg: 4.5 }}>
-                <Stack spacing={1.25}>
+
+              <Grid size={{ xs: 12, lg: 5.5 }}>
+                <Stack
+                  spacing={0.9}
+                  sx={{
+                    height: '100%',
+                    justifyContent: 'center',
+                    maxWidth: 560,
+                    ml: 'auto',
+                    width: '100%',
+                  }}
+                >
                   <Paper
                     variant="outlined"
                     sx={{
                       ...HERO_COMPACT_CARD_SX,
+                      background: 'rgba(255,255,255,0.58)',
+                      px: 1.5,
                     }}
                   >
-                    <Stack spacing={0.75}>
-                      <Typography variant="overline" color="primary">
+                    <Stack spacing={0.35}>
+                      <Typography
+                        variant="overline"
+                        color="primary"
+                        sx={{ whiteSpace: 'nowrap', fontSize: '0.6rem', lineHeight: 1.05, letterSpacing: 0 }}
+                      >
                         {t.runtimeMode}
                       </Typography>
-                      <Typography sx={{ fontWeight: 700, lineHeight: 1.3, fontSize: '0.95rem' }}>
+                      <Typography sx={{ fontWeight: 700, lineHeight: 1.15, fontSize: '0.82rem', color: '#242220' }}>
                         {runtimeMode === 'browser' ? t.browserMode : t.runtimeUnavailable}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.3, fontSize: '0.76rem' }}>
                         {runtimeMode === 'browser' ? t.remoteConfigured : t.browserUnavailableCta}
                       </Typography>
                     </Stack>
                   </Paper>
 
-                  <Grid container spacing={1.25}>
+                  <Grid container spacing={0.9}>
                     {t.portfolioHighlights.map((item) => (
-                      <Grid key={item.label} size={{ xs: 12 }}>
+                      <Grid key={item.label} size={{ xs: 4 }}>
                         <Paper
                           variant="outlined"
                           sx={{
                             ...HERO_COMPACT_CARD_SX,
+                            background: 'rgba(255,255,255,0.54)',
+                            px: 1.5,
                           }}
                         >
-                          <Stack direction="row" justifyContent="space-between" spacing={2} alignItems="center">
-                            <Typography variant="overline" color="primary">
+                          <Stack spacing={0.2}>
+                            <Typography
+                              variant="overline"
+                              color="primary"
+                              sx={{ whiteSpace: 'nowrap', fontSize: '0.6rem', lineHeight: 1.05, letterSpacing: 0 }}
+                            >
                               {item.label}
                             </Typography>
                             <Typography
                               variant="body2"
                               sx={{
                                 fontWeight: 700,
-                                lineHeight: 1.35,
-                                fontSize: '0.82rem',
-                                textAlign: 'right',
+                                lineHeight: 1.15,
+                                fontSize: '0.76rem',
+                                color: '#242220',
                               }}
                             >
                               {item.value}
@@ -1278,11 +1499,11 @@ export default function App() {
                 boxShadow: '0 12px 26px rgba(76, 48, 24, 0.06)',
               }}
             >
-              <Stack spacing={2}>
+              <Stack spacing={1.5}>
                 <Typography variant="overline" color="primary">
                   {getDiagnosticsTitle(uiLanguage)}
                 </Typography>
-                <Grid container spacing={1.5}>
+                <Grid container spacing={1.25}>
                   {diagnosticSections.map((section) => (
                     <Grid key={section.title} size={{ xs: 12, md: 6, xl: 3 }}>
                       <Card
@@ -1320,7 +1541,7 @@ export default function App() {
                     variant="outlined"
                     size="small"
                     onClick={() => copyText('chrome://flags/#optimization-guide-on-device-model')}
-                    sx={{ justifyContent: 'flex-start' }}
+                    sx={{ justifyContent: 'flex-start', whiteSpace: 'normal', overflowWrap: 'anywhere' }}
                   >
                     chrome://flags/#optimization-guide-on-device-model
                   </Button>
@@ -1328,7 +1549,7 @@ export default function App() {
                     variant="outlined"
                     size="small"
                     onClick={() => copyText('chrome://flags/#prompt-api-for-gemini-nano-multimodal-input')}
-                    sx={{ justifyContent: 'flex-start' }}
+                    sx={{ justifyContent: 'flex-start', whiteSpace: 'normal', overflowWrap: 'anywhere' }}
                   >
                     chrome://flags/#prompt-api-for-gemini-nano-multimodal-input
                   </Button>
@@ -1336,7 +1557,7 @@ export default function App() {
                     variant="outlined"
                     size="small"
                     onClick={() => copyText('chrome://on-device-internals')}
-                    sx={{ justifyContent: 'flex-start' }}
+                    sx={{ justifyContent: 'flex-start', whiteSpace: 'normal', overflowWrap: 'anywhere' }}
                   >
                     chrome://on-device-internals
                   </Button>
@@ -1362,48 +1583,27 @@ export default function App() {
             </Paper>
           )}
 
-          <Grid container spacing={3}>
-            <Grid size={{ xs: 12 }}>
-              <Grid container spacing={2}>
-                {t.portfolioUseCases.map((item) => (
-                  <Grid key={item} size={{ xs: 12, md: 4 }}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 1.6,
-                        ...BALLOON_SURFACE_SX,
-                        boxShadow: '0 10px 22px rgba(76, 48, 24, 0.05)',
-                        height: '100%',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ fontSize: '0.92rem', color: 'text.secondary', lineHeight: 1.55 }}>
-                        {item}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-            </Grid>
-
-            <Grid size={{ xs: 12, lg: 4 }}>
-              <Stack spacing={3}>
+          <Grid
+            container
+            spacing={{ xs: 2, md: 2.5 }}
+            sx={{ alignItems: 'start' }}
+          >
+            <Grid size={{ xs: 12, lg: 5, xl: 4.75 }}>
+              <Stack spacing={2}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 2.25,
+                    p: 1.35,
                     border: '1px solid rgba(47,34,24,0.08)',
                     boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
                     background: 'rgba(255, 250, 244, 0.9)',
                   }}
                 >
-                  <Stack component="form" spacing={3} onSubmit={handleSubmit}>
+                  <Stack component="form" spacing={1.35} onSubmit={handleSubmit}>
                     <Box>
-                      <Typography variant="overline" color="primary">
-                        {t.workspace}
+                      <Typography variant="overline" color="primary" sx={{ whiteSpace: 'nowrap' }}>
+                        {t.workspace} | {t.multimodalInput}
                       </Typography>
-                      <Typography variant="h5">{t.multimodalInput}</Typography>
                     </Box>
 
                     <FormControl fullWidth>
@@ -1415,27 +1615,22 @@ export default function App() {
                         onChange={(event) => setUiLanguage(event.target.value)}
                         inputProps={{
                           'aria-label': t.interfaceLanguage,
-                          'aria-describedby': 'ui-language-help',
                         }}
                       >
                         <MenuItem value="pt-BR">Portugues (Brasil)</MenuItem>
                         <MenuItem value="en-US">English</MenuItem>
                         <MenuItem value="es-ES">Espanol</MenuItem>
                       </Select>
-                      <FormHelperText id="ui-language-help">{t.interfaceLanguageHelp}</FormHelperText>
                     </FormControl>
 
-                    <Grid container spacing={2}>
+                    <Grid container spacing={1}>
                       <Grid size={{ xs: 12 }}>
                         <Stack spacing={1.25}>
-                          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                            <Typography variant="body2" fontWeight={700}>
-                              {t.experimentalControls}
-                            </Typography>
-                            <Chip size="small" color="warning" label="Experimental" />
-                          </Stack>
+                          <Typography variant="overline" color="primary">
+                            {t.generationControls}
+                          </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {t.experimentalControlsHelp}
+                            {t.generationControlsHelp}
                           </Typography>
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             <Chip
@@ -1443,6 +1638,7 @@ export default function App() {
                               variant="outlined"
                               color="secondary"
                               label={t.precisePreset}
+                              sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap' } }}
                               onClick={() => applyControlPreset('precise')}
                             />
                             <Chip
@@ -1450,6 +1646,7 @@ export default function App() {
                               variant="outlined"
                               color="secondary"
                               label={t.balancedPreset}
+                              sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap' } }}
                               onClick={() => applyControlPreset('balanced')}
                             />
                             <Chip
@@ -1457,6 +1654,7 @@ export default function App() {
                               variant="outlined"
                               color="secondary"
                               label={t.creativePreset}
+                              sx={{ maxWidth: '100%', '& .MuiChip-label': { whiteSpace: 'nowrap' } }}
                               onClick={() => applyControlPreset('creative')}
                             />
                           </Stack>
@@ -1503,7 +1701,7 @@ export default function App() {
                     <Box
                       sx={{
                         ...BALLOON_SURFACE_SX,
-                        p: 2,
+                        p: 1.1,
                         borderRadius: 0.5,
                       }}
                     >
@@ -1512,7 +1710,7 @@ export default function App() {
                       </Typography>
                       <TextField
                         multiline
-                        minRows={5}
+                        minRows={4}
                         fullWidth
                         value={prompt}
                         onChange={(event) => setPrompt(event.target.value)}
@@ -1535,35 +1733,38 @@ export default function App() {
                           'aria-label': t.prompt,
                         }}
                       />
-                      <Divider sx={{ my: 1.5, opacity: 0.6 }} />
+                      <Divider sx={{ my: 0.7, opacity: 0.6 }} />
                     </Box>
 
                     {renderGenericDropZone()}
 
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                      <Button
-                      type="button"
-                        variant={isDictating || isCapturingAudio ? 'contained' : 'outlined'}
-                        color="secondary"
-                        startIcon={isDictating || isCapturingAudio ? <StopCircleRounded /> : <MicRounded />}
-                        onClick={toggleMicrophone}
-                        disabled={!speechSupported && !microphoneCaptureSupported}
-                      >
-                        {isDictating || isCapturingAudio ? t.stopDictation : t.useMicrophone}
-                      </Button>
-
-                    </Stack>
-
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      useFlexGap
+                      sx={{ flexWrap: 'nowrap', alignItems: 'center' }}
+                    >
                       <Button
                         type="submit"
                         variant="contained"
                         size="large"
                         startIcon={isGenerating ? <StopCircleRounded /> : <AutoAwesomeRounded />}
                         disabled={!!fatalError}
-                        sx={{ flex: 1, py: 1.35 }}
+                        sx={{ flex: '1 1 0', py: 0.9, whiteSpace: 'nowrap', minWidth: 0, flexShrink: 1 }}
                       >
                         {isGenerating ? t.stop : t.runTask}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant={isDictating || isCapturingAudio ? 'contained' : 'outlined'}
+                        color="secondary"
+                        startIcon={isDictating || isCapturingAudio ? <StopCircleRounded /> : <MicRounded />}
+                        onClick={toggleMicrophone}
+                        disabled={!speechSupported && !microphoneCaptureSupported}
+                        sx={{ whiteSpace: 'nowrap', minWidth: 0, flex: '0 1 auto' }}
+                      >
+                        {isDictating || isCapturingAudio ? t.stopDictation : t.useMicrophone}
                       </Button>
 
                       <Button
@@ -1571,6 +1772,7 @@ export default function App() {
                         variant="outlined"
                         color="secondary"
                         onClick={clearPromptInputs}
+                        sx={{ whiteSpace: 'nowrap', minWidth: 0, flex: '0 1 auto' }}
                       >
                         {t.clearPrompt}
                       </Button>
@@ -1580,6 +1782,7 @@ export default function App() {
                         variant="outlined"
                         color="secondary"
                         onClick={() => setOutput(t.responsePlaceholder)}
+                        sx={{ whiteSpace: 'nowrap', minWidth: 0, flex: '0 1 auto' }}
                       >
                         {t.clearOutput}
                       </Button>
@@ -1587,10 +1790,101 @@ export default function App() {
                   </Stack>
                 </Paper>
 
+              </Stack>
+            </Grid>
+
+            <Grid size={{ xs: 12, lg: 7, xl: 7.25 }}>
+              <Stack spacing={2}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 2.5,
+                    p: 1.35,
+                    minHeight: { xs: 140, md: 170 },
+                    border: '1px solid rgba(47,34,24,0.08)',
+                    background:
+                      'linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,248,240,0.96))',
+                    boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
+                  }}
+                >
+                  <Stack spacing={1}>
+                    <Box>
+                      <Typography variant="overline" color="primary" sx={{ whiteSpace: 'nowrap' }}>
+                        {t.output} | {t.llmResult}
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <Typography
+                      ref={outputRef}
+                      component="pre"
+                      sx={{
+                        m: 0,
+                        maxHeight: { xs: 170, md: 200 },
+                        overflowY: 'auto',
+                        pr: 1,
+                        whiteSpace: 'pre-wrap',
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'break-word',
+                        fontFamily: '"Segoe UI", sans-serif',
+                        fontSize: { xs: '0.88rem', md: '0.93rem' },
+                        lineHeight: { xs: 1.65, md: 1.8 },
+                        color: output ? 'text.primary' : 'text.secondary',
+                        fontStyle: output ? 'normal' : 'italic',
+                      }}
+                    >
+                      {output || (isGenerating ? getErrorMessage('preparingSession', uiLanguage) : t.responsePlaceholder)}
+                    </Typography>
+                  </Stack>
+                </Paper>
+
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1.35,
+                    border: '1px solid rgba(47,34,24,0.08)',
+                    boxShadow: '0 10px 24px rgba(76, 48, 24, 0.05)',
+                    background: 'rgba(255, 250, 244, 0.88)',
+                  }}
+                >
+                  <Stack spacing={1.1}>
+                    <Typography variant="overline" color="primary">
+                      {t.ideas}
+                    </Typography>
+                    <Grid container spacing={1}>
+                      {t.ideaCards.slice(0, 4).map((idea) => (
+                        <Grid key={idea} size={{ xs: 12, md: 6 }}>
+                          <Card
+                            variant="outlined"
+                            sx={{
+                              height: '100%',
+                              ...BALLOON_SURFACE_SX,
+                            }}
+                          >
+                            <CardContent sx={{ p: 1.25, '&:last-child': { pb: 1.25 } }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  fontSize: '0.84rem',
+                                  color: 'text.secondary',
+                                  lineHeight: 1.35,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}
+                              >
+                                {idea}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  </Stack>
+                </Paper>
+
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1.35,
                     border: '1px solid rgba(47,34,24,0.08)',
                     backgroundColor: 'rgba(255, 249, 243, 0.82)',
                     boxShadow: '0 10px 24px rgba(76, 48, 24, 0.05)',
@@ -1599,7 +1893,7 @@ export default function App() {
                   <Typography variant="overline" color="primary">
                     {t.practicalNotes}
                   </Typography>
-                  <Stack spacing={1.2} sx={{ mt: 1.5 }}>
+                  <Stack spacing={0.85} sx={{ mt: 1 }}>
                     {t.practicalNotesItems.map((item) => (
                       <Typography key={item} variant="body2" color="text.secondary">
                         {item}
@@ -1607,106 +1901,11 @@ export default function App() {
                     ))}
                   </Stack>
                 </Paper>
-              </Stack>
-            </Grid>
-
-            <Grid size={{ xs: 12, lg: 8 }}>
-              <Stack spacing={3}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
-                    border: '1px solid rgba(47,34,24,0.08)',
-                    boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
-                    background: 'rgba(255, 250, 244, 0.9)',
-                  }}
-                >
-                  <Typography variant="overline" color="primary">
-                    {t.ideas}
-                  </Typography>
-                  <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                    {t.ideaCards.map((idea) => (
-                      <Grid key={idea} size={{ xs: 12, md: 6 }}>
-                        <Card
-                          variant="outlined"
-                          sx={{
-                            height: '100%',
-                            ...BALLOON_SURFACE_SX,
-                          }}
-                        >
-                          <CardContent>
-                            <Typography variant="body2" sx={{ fontSize: '0.9rem', color: 'text.secondary' }}>
-                              {idea}
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </Paper>
 
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 2.5,
-                    minHeight: 380,
-                    border: '1px solid rgba(47,34,24,0.08)',
-                    background:
-                      'linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,248,240,0.96))',
-                    boxShadow: '0 14px 30px rgba(76, 48, 24, 0.06)',
-                  }}
-                >
-                  <Stack spacing={1.25}>
-                    <Box>
-                      <Typography variant="overline" color="primary">
-                        {t.output}
-                      </Typography>
-                      <Typography variant="h5">{t.llmResult}</Typography>
-                    </Box>
-                    <Divider />
-                    <Typography
-                      ref={outputRef}
-                      component="pre"
-                      sx={{
-                        m: 0,
-                        maxHeight: { xs: 320, md: 420 },
-                        overflowY: 'auto',
-                        pr: 1,
-                        whiteSpace: 'pre-wrap',
-                        overflowWrap: 'anywhere',
-                        fontFamily: '"Segoe UI", sans-serif',
-                        fontSize: '0.93rem',
-                        lineHeight: 1.8,
-                        color: 'text.primary',
-                      }}
-                    >
-                      {output || t.responsePlaceholder}
-                    </Typography>
-                  </Stack>
-                </Paper>
-
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
-                    border: '1px solid rgba(47,34,24,0.08)',
-                    background: 'linear-gradient(135deg, rgba(143,61,31,0.08), rgba(33,92,115,0.08))',
-                  }}
-                >
-                  <Stack spacing={2}>
-                    <Typography variant="overline" color="primary">
-                      Portfolio note
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                      {t.portfolioNote}
-                    </Typography>
-                  </Stack>
-                </Paper>
-
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
+                    p: 1.35,
                     border: '1px solid rgba(47,34,24,0.08)',
                     background: 'rgba(255, 249, 243, 0.82)',
                   }}
